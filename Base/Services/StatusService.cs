@@ -17,7 +17,7 @@ public class StatusService(ILogger logger) : IStatusService
 
         var activeMacs = GetActiveMacAddressesFromArp();
         var normalizedTargets = targetMacs.Select(m => m.Trim().ToLower()).ToHashSet();
-        var isRunning = normalizedTargets.All(activeMacs.Contains);
+        var isRunning = normalizedTargets.Any(activeMacs.Contains);
         logger.Log($"IsRunning check: {isRunning}. MACs: {string.Join(", ", targetMacs)}");
 
         return isRunning;
