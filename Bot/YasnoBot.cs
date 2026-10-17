@@ -98,6 +98,29 @@ public class YasnoBot
                 UserRepository.Save(user);
             }
 
+            // Admin commands
+            var settings = ServicesProvider.Get<ISettings>();
+
+            if (message.Text == "/settings")
+            {
+                var allSettings = settings.Keys.Select(key => $"{key}: {settings.Get(key)}");
+                var settingsMessage = string.Join("\n", allSettings) + "\n\n/settings/<KEY>: <VALUE>";
+
+                await NotifyService.Notify(message.Chat.Id, settingsMessage);
+                return;
+            }
+
+            if (message.Text.StartsWith("/settings/"))
+            {
+                var key = message.Text.SubString("/settings/", ":").Trim();
+                var value = message.Text.SubString(":").Trim();
+
+                settings.Set(key, value);
+                await NotifyService.Notify(message.Chat.Id, $"Setting updated: {key} = {value}");
+                return;
+            }
+            // Admin commands
+
             if (user.Notify && message.Text == msgOff)
             {
                 user.Notify = false;
@@ -117,8 +140,19 @@ public class YasnoBot
             {
                 var historyService = ServicesProvider.Get<IHistoryService>();
                 var lastRecord = historyService.GetLastRecord();
-                var icon = lastRecord.Status ? "💡" : "❌";
-                replyMessage = $"{icon} There is {(lastRecord.Status ? "" : "NO ")}electricity for {lastRecord?.DateTime.GetTimeDifference()}";
+
+                if (lastRecord is null)
+                {
+                    replyMessage = "No data available";
+                }
+                else
+                {
+                    bool isOnline = lastRecord.Status;
+                    string icon = isOnline ? "💡" : "❌";
+                    string statusText = isOnline ? string.Empty : "NO ";
+
+                    replyMessage = $"{icon} There is {statusText}electricity for {lastRecord.DateTime.GetTimeDifference()}";
+                }
             }
 
             await NotifyService.NotifyWithButtons(message.Chat.Id, replyMessage, btnText, msgStatus);

@@ -21,18 +21,15 @@ internal class Tasks(ITelegramBotClient botClient)
             try
             {
                 var historyService = ServicesProvider.Get<IHistoryService>();
-                var statusService = ServicesProvider.Get<IStatusService>();
+                var lastRecord = historyService.GetLastRecord();
+                var prevRecord = historyService.GetPreviousRecord();
 
-                var lastStatus = historyService.GetLastRecord()?.Status ?? false;
-                var isRunning = statusService.IsRunning();
+                if (lastRecord is null || prevRecord is null || lastRecord.Notified) continue;
+                await UpdateIcon(prevRecord!);
+                await NotifyUsers(prevRecord!);
 
-                if (lastStatus != isRunning)
-                {
-                    await UpdateIcon(isRunning);
-
-                    var prevRecord = historyService.GetPreviousRecord();
-                    await NotifyUsers(prevRecord!);
-                }
+                lastRecord.Notified = true;
+                historyService.Update(lastRecord);
 
                 var timeout = DateTime.Now.TillNextMinute();
                 await Task.Delay(timeout);
@@ -63,9 +60,15 @@ internal class Tasks(ITelegramBotClient botClient)
         }
     }
 
-    private async Task UpdateIcon(bool isRunning)
+    private async Task UpdateIcon(StatisticsDto previousData)
     {
-        var filePath = isRunning ? "Images/LightON.jpeg" : "Images/LightOFF.jpeg";
+        if (previousData.DateTime > DateTime.Now.AddMinutes(-15))
+        {
+            Logger.Log("Skipping icon update due to time threshold.");
+            return;
+        }
+
+        var filePath = previousData.Status ? "Images/LightOFF.jpeg" : "Images/LightON.jpeg";
 
         await using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
         var inputPhoto = new InputProfilePhotoStatic { Photo = fileStream };

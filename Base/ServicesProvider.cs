@@ -18,16 +18,10 @@ public static class ServicesProvider
         services.AddSingleton<IHistoryService, HistoryService>();
         services.AddSingleton<IStatusService, StatusService>();
         services.AddSingleton<IUserRepository, UserRepository>();
+        services.AddSingleton<ISettings, Settings>();
 
         Instance = services.BuildServiceProvider();
     }
-
-    //public static void AddMock<T>(Mock<T> mock) where T : class
-    //{
-    //    var implementation = mock.Object;
-    //    services.AddSingleton(typeof(T), implementation);
-    //    Instance = services.BuildServiceProvider();
-    //}
 
     public static void Add<TImplementation>(TImplementation implemenation) where TImplementation : class
     {

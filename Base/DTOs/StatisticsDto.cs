@@ -4,4 +4,5 @@ public class StatisticsDto
 {
     public DateTime DateTime { get; set; }
     public bool Status { get; set; }
+    public bool Notified { get; set; }
 }
