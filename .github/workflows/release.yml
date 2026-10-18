@@ -30,9 +30,9 @@ jobs:
         run: dotnet publish -c Release -o ./publish
 
       - name: Create ZIP archive
+        shell: pwsh
         run: |
-          cd publish
-          zip -r ../YasnoBot.zip .
+          Compress-Archive -Path ./publish/* -DestinationPath ./YasnoBot.zip -Force
 
       - name: Create GitHub Release
         shell: pwsh
