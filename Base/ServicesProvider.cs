@@ -19,6 +19,7 @@ public static class ServicesProvider
         services.AddSingleton<IStatusService, StatusService>();
         services.AddSingleton<IUserRepository, UserRepository>();
         services.AddSingleton<ISettings, Settings>();
+        services.AddSingleton<IScheduleService, YasnoService>();
 
         Instance = services.BuildServiceProvider();
     }
