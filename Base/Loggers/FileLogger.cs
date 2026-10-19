@@ -15,7 +15,7 @@ public class FileLogger : ILogger
             {
                 if (!File.Exists(LogFile)) return string.Empty;
                 var lines = File.ReadAllLines(LogFile);
-                var topTenLines = lines.Reverse().Take(25).Reverse();
+                var topTenLines = lines.Reverse().Take(10).Reverse();
                 return string.Join(Environment.NewLine, topTenLines);
             }
             catch { return string.Empty; }
