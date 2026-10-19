@@ -18,6 +18,8 @@ public class YasnoBot
     private static readonly string msgOff = "🔕 Turn Off";
     private static readonly string msgOn = "🔔 Turn On";
     private static readonly string msgStatus = "📊 Status";
+    private static readonly string today = "📅 Today";
+    private static readonly string tomorrow = "📅 Tomorrow";
 
     private static ILogger Logger => ServicesProvider.Get<ILogger>();
     private static IUserRepository UserRepository => ServicesProvider.Get<IUserRepository>();
@@ -41,6 +43,7 @@ public class YasnoBot
             cancellationToken: cts.Token
         );
 
+        await tasks.OnStartUp();
         _ = Task.Run(async () => await tasks.DoEveryMinute());
 
         Console.WriteLine("Starting Bot.");
@@ -119,6 +122,11 @@ public class YasnoBot
                 await NotifyService.Notify(message.Chat.Id, $"Setting updated: {key} = {value}");
                 return;
             }
+
+            if (message.Text == "/logs")
+            {
+                await NotifyService.Notify(message.Chat.Id, Logger.TopLogs);
+            }
             // Admin commands
 
             if (user.Notify && message.Text == msgOff)
@@ -155,12 +163,36 @@ public class YasnoBot
                 }
             }
 
-            await NotifyService.NotifyWithButtons(message.Chat.Id, replyMessage, btnText, msgStatus);
+            if (message.Text == today || message.Text == tomorrow)
+            {
+                var scheduleService = ServicesProvider.Get<IScheduleService>();
+                var schedule = scheduleService.Current;
+
+                replyMessage = GetScheduleMessage(message.Text == today ? schedule.Today : schedule.Tomorrow);
+            }
+
+            await NotifyService.NotifyWithButtons(message.Chat.Id, replyMessage, btnText, msgStatus, today, tomorrow);
         }
         catch (Exception e)
         {
             Console.WriteLine(e);
             Logger.Log(e);
         }
+    }
+
+    private static string GetScheduleMessage(ScheduleDto schedule)
+    {
+        if (schedule is null || schedule.Slots is null || !schedule.Slots.Any())
+        {
+            return "No schedule available";
+        }
+
+        var message = "Schedule:\n";
+        foreach (var slot in schedule.Slots)
+        {
+            var status = slot.IsEnabled ? "💡 ON" : "❌ OFF";
+            message += $"{slot.Start:HH:mm} - {slot.End:HH:mm}: {status}\n";
+        }
+        return message;
     }
 }

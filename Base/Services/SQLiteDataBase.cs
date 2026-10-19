@@ -19,6 +19,7 @@ public class SQLiteDataBase(ILogger logger) : IDataBase
                 var initTablesCommand = @"
                 CREATE TABLE IF NOT EXISTS Users (ID Number PRIMARY KEY, Notify Number);
                 CREATE TABLE IF NOT EXISTS History (DateTime TEXT PRIMARY KEY, Active Number, Notified Number);
+                CREATE TABLE IF NOT EXISTS Data (Key TEXT PRIMARY KEY, Value TEXT);
                 CREATE TABLE IF NOT EXISTS Settings (Key TEXT PRIMARY KEY, Value TEXT); ";
 
                 _connection = new SqliteConnection(ConnectionString);

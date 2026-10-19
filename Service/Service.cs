@@ -13,6 +13,7 @@ public class Service
         var historyService = ServicesProvider.Get<IHistoryService>();
         var statusService = ServicesProvider.Get<IStatusService>();
         var logger = ServicesProvider.Get<ILogger>();
+
         var count = 0;
 
         while (true)
@@ -20,9 +21,14 @@ public class Service
             count++;
             if (count % 15 == 0)
             {
-                //var schedule = scheduleService.GetSchedule();
-                // save to DB?
-                // get schedule
+                var newSchedule = await scheduleService.GetNewSchedule();
+                var currentSchedule = scheduleService.Current;
+                currentSchedule.Notified = newSchedule.Notified;
+
+                if (currentSchedule.IsEqual(newSchedule))
+                {
+                    scheduleService.Current = newSchedule;
+                }
             }
 
             var currentStatus = statusService.IsRunning();

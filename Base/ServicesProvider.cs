@@ -20,6 +20,7 @@ public static class ServicesProvider
         services.AddSingleton<IUserRepository, UserRepository>();
         services.AddSingleton<ISettings, Settings>();
         services.AddSingleton<IScheduleService, YasnoService>();
+        services.AddSingleton<IApi, ApiService>();
 
         Instance = services.BuildServiceProvider();
     }

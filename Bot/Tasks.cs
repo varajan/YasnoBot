@@ -13,6 +13,11 @@ internal class Tasks(ITelegramBotClient botClient)
     private static ILogger Logger => ServicesProvider.Get<ILogger>();
     private static IUserRepository UserRepository => ServicesProvider.Get<IUserRepository>();
     private static INotifyService NotifyService => ServicesProvider.Get<INotifyService>();
+    private static IScheduleService ScheduleService => ServicesProvider.Get<IScheduleService>();
+
+    private static List<UserDto> UsersToNotify => UserRepository.GetAll().Where(u => u.Notify).ToList();
+
+    public async Task OnStartUp() => await NotifyUsers("New version is available!");
 
     public async Task DoEveryMinute()
     {
@@ -20,13 +25,25 @@ internal class Tasks(ITelegramBotClient botClient)
         {
             try
             {
+                var schedule = ScheduleService.Current;
+                if (schedule is not null && !schedule.Notified)
+                {
+                    await NotifyUsers("⚠️ New Schedule is available!");
+                    schedule.Notified = true;
+                    ScheduleService.Current = schedule;
+                }
+
                 var historyService = ServicesProvider.Get<IHistoryService>();
                 var lastRecord = historyService.GetLastRecord();
                 var prevRecord = historyService.GetPreviousRecord();
 
                 if (lastRecord is null || prevRecord is null || lastRecord.Notified) continue;
+
+                var icon = prevRecord.Status ? "❌" : "💡";
+                var message = $"{icon} There was {(prevRecord.Status ? "" : "NO ")}electricity for {prevRecord.DateTime.GetTimeDifference()}";
+
+                await NotifyUsers(message);
                 await UpdateIcon(prevRecord!);
-                await NotifyUsers(prevRecord!);
 
                 lastRecord.Notified = true;
                 historyService.Update(lastRecord);
@@ -41,13 +58,9 @@ internal class Tasks(ITelegramBotClient botClient)
         }
     }
 
-    private static async Task NotifyUsers(StatisticsDto previousData)
+    private static async Task NotifyUsers(string message)
     {
-        var users = UserRepository.GetAll().Where(u => u.Notify).ToList();
-        var icon = previousData.Status ? "❌" : "💡";
-        var message = $"{icon} There was {(previousData.Status ? "" : "NO ")}electricity for {previousData.DateTime.GetTimeDifference()}";
-
-        foreach (var user in users)
+        foreach (var user in UsersToNotify)
         {
             try
             {
