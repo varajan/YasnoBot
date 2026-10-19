@@ -11,7 +11,7 @@ public class YasnoService(IApi api, IDataBase database, ILogger logger) : ISched
 
     public TwoDayScheduleDto Current
     {
-        get => database.GetValue("SELECT Value FROM Data WHERE Key = 'Schedule'").DeSerialize<TwoDayScheduleDto>();
+        get => database.GetValue("SELECT Value FROM Data WHERE Key = 'Schedule'")?.DeSerialize<TwoDayScheduleDto>();
         set => database.Execute($"INSERT OR REPLACE INTO Data (Key, Value) VALUES ('Schedule', '{value.Serialize()}')");
     }
 
