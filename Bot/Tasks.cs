@@ -66,16 +66,15 @@ internal class Tasks(ITelegramBotClient botClient)
         HistoryService.Update(lastRecord);
     }
 
-    public async Task SoonBlackoutNotification()
+    public async Task UpcomingBlackoutNotification()
     {
-        var noBlackout = HistoryService.GetLastRecord()!.Status;
-        if (noBlackout) return;
+        var lastRecord = HistoryService.GetLastRecord();
+        if (lastRecord is null || lastRecord.Status) return;
 
         var schedule = ScheduleService.GetCurrent();
-        if (schedule is null || schedule.Today.Slots.Count() == 0) return;
+        if (schedule is null || schedule.Today.Slots.Length == 0) return;
 
-        var nowDate = DateTime.Now;
-        var now = new TimeOnly(nowDate.Hour, nowDate.Minute);
+        var now = new TimeOnly(DateTime.Now.Hour, DateTime.Now.Minute);
         var currentSlot = schedule.Today.Slots.Last(s => s.Start < now);
 
         if (IsNotified(currentSlot) || !currentSlot.IsEnabled || currentSlot.End > now.AddMinutes(5)) return;

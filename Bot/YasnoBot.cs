@@ -46,7 +46,7 @@ public class YasnoBot
         await Tasks.OnStartUp();
         _ = Task.Run(async () => await Tasks.DoEveryMinute(Tasks.NewScheduleNotification()));
         _ = Task.Run(async () => await Tasks.DoEveryMinute(tasks.StatusChangedNotification()));
-        _ = Task.Run(async () => await Tasks.DoEveryMinute(tasks.SoonBlackoutNotification()));
+        _ = Task.Run(async () => await Tasks.DoEveryMinute(tasks.UpcomingBlackoutNotification()));
 
         Console.WriteLine("Starting Bot.");
         await Task.Delay(Timeout.Infinite, cts.Token);
@@ -168,15 +168,16 @@ public class YasnoBot
             if (message.Text == today || message.Text == tomorrow)
             {
                 var scheduleService = ServicesProvider.Get<IScheduleService>();
-                var schedule = scheduleService.GetCurrent();
+                var fullSchedule = scheduleService.GetCurrent();
 
-                if (schedule is null)
+                if (fullSchedule is null)
                 {
                     replyMessage = "No data available";
                 }
                 else
                 {
-                    replyMessage = GetScheduleMessage(message.Text == today ? schedule.Today : schedule.Tomorrow);
+                    var schedule = message.Text == today ? fullSchedule.Today : fullSchedule.Tomorrow;
+                    replyMessage = GetScheduleMessage(schedule, message.Text == today);
                 }
             }
 
@@ -195,18 +196,20 @@ public class YasnoBot
         }
     }
 
-    private static string GetScheduleMessage(ScheduleDto schedule)
+    private static string GetScheduleMessage(ScheduleDto schedule, bool today)
     {
         if (schedule is null || schedule.Slots is null || !schedule.Slots.Any())
         {
             return "No schedule available";
         }
 
+        var now = new TimeOnly(DateTime.Now.Hour, DateTime.Now.Minute);
         var message = "Schedule:\n";
         foreach (var slot in schedule.Slots)
         {
+            var arrow = today && now.IsBetween(slot.Start, slot.End) ? "👈" : "";
             var status = slot.IsEnabled ? "💡 ON" : "❌ OFF";
-            message += $"{slot.Start:HH:mm} - {slot.End:HH:mm}: {status}\n";
+            message += $"{slot.Start:HH:mm} - {slot.End:HH:mm}: {status} {arrow}\n";
         }
         return message;
     }
