@@ -14,40 +14,20 @@ internal class Tasks(ITelegramBotClient botClient)
     private static IUserRepository UserRepository => ServicesProvider.Get<IUserRepository>();
     private static INotifyService NotifyService => ServicesProvider.Get<INotifyService>();
     private static IScheduleService ScheduleService => ServicesProvider.Get<IScheduleService>();
+    private static IHistoryService HistoryService => ServicesProvider.Get<IHistoryService>();
+    private static IDataBase DataBase => ServicesProvider.Get<IDataBase>();
 
     private static List<UserDto> UsersToNotify => UserRepository.GetAll().Where(u => u.Notify).ToList();
 
-    public async Task OnStartUp() => await NotifyUsers("New version is available!");
+    public static async Task OnStartUp() => await NotifyUsers("New version is available!");
 
-    public async Task DoEveryMinute()
+    public static async Task DoEveryMinute(Task task)
     {
         while (true)
         {
             try
             {
-                var schedule = ScheduleService.GetCurrent();
-                if (schedule is not null && !schedule.Notified)
-                {
-                    await NotifyUsers("⚠️ New Schedule is available!");
-                    schedule.Notified = true;
-                    ScheduleService.SetCurrent(schedule);
-                }
-
-                var historyService = ServicesProvider.Get<IHistoryService>();
-                var lastRecord = historyService.GetLastRecord();
-                var prevRecord = historyService.GetPreviousRecord();
-
-                if (lastRecord is null || prevRecord is null || lastRecord.Notified) continue;
-
-                var icon = prevRecord.Status ? "❌" : "💡";
-                var message = $"{icon} There was {(prevRecord.Status ? "" : "NO ")}electricity for {prevRecord.DateTime.GetTimeDifference()}";
-
-                await NotifyUsers(message);
-                await UpdateIcon(prevRecord!);
-
-                lastRecord.Notified = true;
-                historyService.Update(lastRecord);
-
+                await task;
                 var timeout = DateTime.Now.TillNextMinute();
                 await Task.Delay(timeout);
             }
@@ -56,6 +36,53 @@ internal class Tasks(ITelegramBotClient botClient)
                 Logger.Log(e);
             }
         }
+    }
+
+    public static async Task NewScheduleNotification()
+    {
+        var schedule = ScheduleService.GetCurrent();
+        if (schedule is not null && !IsNotified(schedule))
+        {
+            await NotifyUsers("⚠️ New Schedule is available!");
+            ScheduleService.SetCurrent(schedule);
+            SetNotified(schedule);
+        }
+    }
+
+    public async Task StatusChangedNotification()
+    {
+        var lastRecord = HistoryService.GetLastRecord();
+        var prevRecord = HistoryService.GetPreviousRecord();
+
+        if (lastRecord is null || prevRecord is null || lastRecord.Notified) return;
+
+        var icon = prevRecord.Status ? "❌" : "💡";
+        var message = $"{icon} There was {(prevRecord.Status ? "" : "NO ")}electricity for {prevRecord.DateTime.GetTimeDifference()}";
+
+        await NotifyUsers(message);
+        await UpdateIcon(prevRecord!);
+
+        lastRecord.Notified = true;
+        HistoryService.Update(lastRecord);
+    }
+
+    public async Task SoonBlackoutNotification()
+    {
+        var noBlackout = HistoryService.GetLastRecord()!.Status;
+        if (noBlackout) return;
+
+        var schedule = ScheduleService.GetCurrent();
+        if (schedule is null || schedule.Today.Slots.Count() == 0) return;
+
+        var nowDate = DateTime.Now;
+        var now = new TimeOnly(nowDate.Hour, nowDate.Minute);
+        var currentSlot = schedule.Today.Slots.Last(s => s.Start < now);
+
+        if (IsNotified(currentSlot) || !currentSlot.IsEnabled || currentSlot.End > now.AddMinutes(5)) return;
+
+        await NotifyUsers("❌ Next blackout is in 5 minutes");
+        await UpdateIcon("Images/LightON-OFF.jpeg");
+        SetNotified(currentSlot);
     }
 
     private static async Task NotifyUsers(string message)
@@ -82,10 +109,20 @@ internal class Tasks(ITelegramBotClient botClient)
         }
 
         var filePath = previousData.Status ? "Images/LightOFF.jpeg" : "Images/LightON.jpeg";
+        await UpdateIcon(filePath);
+    }
 
+    private async Task UpdateIcon(string filePath)
+    {
         await using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
         var inputPhoto = new InputProfilePhotoStatic { Photo = fileStream };
 
         await botClient.SetMyProfilePhoto(inputPhoto);
     }
+
+    private static bool IsNotified(object entity) =>
+        DataBase.GetRows($"SELECT * FROM Data WHERE Key = '{entity.GetGuid}'").Any();
+
+    private static void SetNotified(object entity) =>
+        DataBase.Execute($"INSERT INTO Data (Key, Value) VALUES ('{entity.GetGuid}', '')");
 }

@@ -43,8 +43,10 @@ public class YasnoBot
             cancellationToken: cts.Token
         );
 
-        await tasks.OnStartUp();
-        _ = Task.Run(async () => await tasks.DoEveryMinute());
+        await Tasks.OnStartUp();
+        _ = Task.Run(async () => await Tasks.DoEveryMinute(Tasks.NewScheduleNotification()));
+        _ = Task.Run(async () => await Tasks.DoEveryMinute(tasks.StatusChangedNotification()));
+        _ = Task.Run(async () => await Tasks.DoEveryMinute(tasks.SoonBlackoutNotification()));
 
         Console.WriteLine("Starting Bot.");
         await Task.Delay(Timeout.Infinite, cts.Token);

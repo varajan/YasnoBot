@@ -24,11 +24,6 @@ public class Service
                 var newSchedule = await scheduleService.GetNewSchedule();
                 var currentSchedule = scheduleService.GetCurrent();
 
-                if (currentSchedule is not null)
-                {
-                    currentSchedule.Notified = newSchedule.Notified;
-                }
-
                 if (currentSchedule is null || !currentSchedule.IsEqual(newSchedule))
                 {
                     scheduleService.SetCurrent(newSchedule);

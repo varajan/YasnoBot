@@ -1,9 +1,20 @@
-﻿using System.Text.Json;
+﻿using System.Security.Cryptography;
+using System.Text;
+using System.Text.Json;
 
 namespace Base.Extensions;
 
 public static class DtoExtensions
 {
+    public static Guid GetGuid(this object obj)
+    {
+        string json = obj.Serialize()!;
+        byte[] inputBytes = Encoding.UTF8.GetBytes(json);
+        using var provider = MD5.Create();
+        byte[] hashBytes = provider.ComputeHash(inputBytes);
+        return new Guid(hashBytes);
+    }
+
     public static bool IsEqual(this object dtoA, object dtoB) =>
         dtoA.Serialize() == dtoB.Serialize();
 
