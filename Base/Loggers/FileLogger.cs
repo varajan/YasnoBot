@@ -14,9 +14,19 @@ public class FileLogger : ILogger
             try
             {
                 if (!File.Exists(LogFile)) return string.Empty;
-                var lines = File.ReadAllLines(LogFile);
-                var topTenLines = lines.Reverse().Take(10).Reverse();
-                return string.Join(Environment.NewLine, topTenLines);
+
+                var lastLines = new Queue<string>(10);
+
+                foreach (var line in File.ReadLines(LogFile))
+                {
+                    if (lastLines.Count == 10)
+                    {
+                        lastLines.Dequeue();
+                    }
+                    lastLines.Enqueue(line);
+                }
+
+                return string.Join(Environment.NewLine, lastLines);
             }
             catch { return string.Empty; }
         }
