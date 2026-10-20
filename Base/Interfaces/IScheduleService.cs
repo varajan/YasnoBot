@@ -5,5 +5,6 @@ namespace Base.Interfaces;
 public interface IScheduleService
 {
     Task<TwoDayScheduleDto> GetNewSchedule();
-    TwoDayScheduleDto Current { get; set; }
+    TwoDayScheduleDto GetCurrent();
+    void SetCurrent(TwoDayScheduleDto schedule);
 }

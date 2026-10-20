@@ -25,12 +25,12 @@ internal class Tasks(ITelegramBotClient botClient)
         {
             try
             {
-                var schedule = ScheduleService.Current;
+                var schedule = ScheduleService.GetCurrent();
                 if (schedule is not null && !schedule.Notified)
                 {
                     await NotifyUsers("⚠️ New Schedule is available!");
                     schedule.Notified = true;
-                    ScheduleService.Current = schedule;
+                    ScheduleService.SetCurrent(schedule);
                 }
 
                 var historyService = ServicesProvider.Get<IHistoryService>();

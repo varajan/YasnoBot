@@ -166,9 +166,16 @@ public class YasnoBot
             if (message.Text == today || message.Text == tomorrow)
             {
                 var scheduleService = ServicesProvider.Get<IScheduleService>();
-                var schedule = scheduleService.Current;
+                var schedule = scheduleService.GetCurrent();
 
-                replyMessage = GetScheduleMessage(message.Text == today ? schedule.Today : schedule.Tomorrow);
+                if (schedule is null)
+                {
+                    replyMessage = "No data available";
+                }
+                else
+                {
+                    replyMessage = GetScheduleMessage(message.Text == today ? schedule.Today : schedule.Tomorrow);
+                }
             }
 
             await NotifyService.NotifyWithButtons(message.Chat.Id, replyMessage, btnText, msgStatus, today, tomorrow);

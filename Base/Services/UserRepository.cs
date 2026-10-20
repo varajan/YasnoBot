@@ -21,13 +21,7 @@ public class UserRepository(IDataBase dataBase) : IUserRepository
 
     public void Save(UserDto user)
     {
-        if (Exists(user.Id))
-        {
-            dataBase.Execute($"UPDATE Users SET Notify = {(user.Notify ? 1 : 0)} WHERE ID = {user.Id}");
-            return;
-        }
-
-        dataBase.Execute($"INSERT INTO Users (ID, Notify) VALUES ({user.Id}, {(user.Notify ? 1 : 0)})");
+        dataBase.Execute($"INSERT OR REPLACE INTO Users (ID, Notify) VALUES ({user.Id}, {(user.Notify ? 1 : 0)})");
     }
 
     private static UserDto GetUser(Dictionary<string, string> user) => new UserDto

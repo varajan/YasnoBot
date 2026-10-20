@@ -9,15 +9,14 @@ public class YasnoService(IApi api, IDataBase database, ILogger logger) : ISched
 {
     private readonly string addressApiUrl = "https://app.yasno.ua/api/blackout-service/public/shutdowns/addresses/v2";
 
-    public TwoDayScheduleDto Current
-    {
-        get => database.GetValue("SELECT Value FROM Data WHERE Key = 'Schedule'")?.DeSerialize<TwoDayScheduleDto>();
-        set => database.Execute($"INSERT OR REPLACE INTO Data (Key, Value) VALUES ('Schedule', '{value.Serialize()}')");
-    }
+    public TwoDayScheduleDto GetCurrent() => database.GetValue("SELECT Value FROM Data WHERE Key = 'Schedule'")?.DeSerialize<TwoDayScheduleDto>();
+
+    public void SetCurrent(TwoDayScheduleDto schedule) => database.Execute($"INSERT OR REPLACE INTO Data (Key, Value) VALUES ('Schedule', '{schedule.Serialize()}')");
 
     public async Task<TwoDayScheduleDto> GetNewSchedule()
     {
         var settings = ServicesProvider.Get<ISettings>();
+
         var city = settings.Get("City");
         var dsos = settings.Get("DSOS");
         var street = settings.Get("Street");

@@ -11,13 +11,13 @@ public static class DtoExtensions
     {
         try
         {
-       return json is null ? null : JsonSerializer.Deserialize<T>(json);
+            return json is null ? null : JsonSerializer.Deserialize<T>(json);
         }
-        catch 
+        catch
         {
             return null;
         }
     }
-            
-    public static string Serialize(this object dto) => JsonSerializer?.Serialize(dto);
+
+    public static string? Serialize(this object dto) => dto is null ? null : JsonSerializer.Serialize(dto);
 }

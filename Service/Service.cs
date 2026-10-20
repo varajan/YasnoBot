@@ -22,12 +22,16 @@ public class Service
             if (count % 15 == 0)
             {
                 var newSchedule = await scheduleService.GetNewSchedule();
-                var currentSchedule = scheduleService.Current;
-                currentSchedule.Notified = newSchedule.Notified;
+                var currentSchedule = scheduleService.GetCurrent();
 
-                if (currentSchedule.IsEqual(newSchedule))
+                if (currentSchedule is not null)
                 {
-                    scheduleService.Current = newSchedule;
+                    currentSchedule.Notified = newSchedule.Notified;
+                }
+
+                if (currentSchedule is null || !currentSchedule.IsEqual(newSchedule))
+                {
+                    scheduleService.SetCurrent(newSchedule);
                 }
             }
 
