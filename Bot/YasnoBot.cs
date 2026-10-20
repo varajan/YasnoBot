@@ -15,9 +15,9 @@ namespace YasnoBot;
 
 public class YasnoBot
 {
-    private static readonly string msgOff = "🔕 Turn Off";
-    private static readonly string msgOn = "🔔 Turn On";
-    private static readonly string msgStatus = "📊 Status";
+    private static readonly string msgOff = "🔕 Turn Off notifications";
+    private static readonly string msgOn = "🔔 Turn On notifications";
+    private static readonly string msgStatus = "📊 Current status";
     private static readonly string today = "📅 Today";
     private static readonly string tomorrow = "📅 Tomorrow";
 
@@ -178,7 +178,13 @@ public class YasnoBot
                 }
             }
 
-            await NotifyService.NotifyWithButtons(message.Chat.Id, replyMessage, btnText, msgStatus, today, tomorrow);
+            var buttons = new List<List<string>>
+            {
+                new() { btnText },
+                new() { msgStatus },
+                new() { today, tomorrow },
+            };
+            await NotifyService.NotifyWithButtons(message.Chat.Id, replyMessage, buttons);
         }
         catch (Exception e)
         {

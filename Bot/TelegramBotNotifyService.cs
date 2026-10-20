@@ -7,6 +7,12 @@ namespace Bot;
 
 public class TelegramBotNotifyService(ITelegramBotClient bot) : INotifyService
 {
+    public async Task NotifyWithButtons(long userId, string message, List<List<string>> buttons)
+    {
+        var rkm = GetButtonsFromMatrix(buttons);
+        await bot.SendMessage(userId, message, replyMarkup: rkm, parseMode: ParseMode.Markdown);
+    }
+
     public async Task NotifyWithButtons(long userId, string message, params string[] buttons)
     {
         var rkm = buttons.Any()
