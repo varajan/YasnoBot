@@ -15,8 +15,8 @@ namespace YasnoBot;
 
 public class YasnoBot
 {
-    private static readonly string msgOff = "🔕 Turn Off notifications";
-    private static readonly string msgOn = "🔔 Turn On notifications";
+    private static readonly string msgOff = "🔕 Turn off notifications";
+    private static readonly string msgOn = "🔔 Turn on notifications";
     private static readonly string msgStatus = "📊 Current status";
     private static readonly string today = "📅 Today";
     private static readonly string tomorrow = "📅 Tomorrow";
