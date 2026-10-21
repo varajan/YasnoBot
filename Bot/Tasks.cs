@@ -5,6 +5,7 @@ using Base.Interfaces;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 using YasnoLogger.Interfaces;
+using YasnoBot.YasnoLogger.Extensions;
 
 namespace Bot;
 
@@ -101,22 +102,20 @@ internal class Tasks(ITelegramBotClient botClient)
 
     private async Task UpdateIcon(StatisticsDto previousData)
     {
-        if (previousData.DateTime > DateTime.Now.AddMinutes(-15))
-        {
-            Logger.Log("Skipping icon update due to time threshold.");
-            return;
-        }
-
         var filePath = previousData.Status ? "Images/LightOFF.jpeg" : "Images/LightON.jpeg";
         await UpdateIcon(filePath);
     }
 
     private async Task UpdateIcon(string filePath)
     {
+        if (filePath == GetCurrentIcon()) return;
+        if (DateTime.Now.AddMinutes(-5) > GetIconUpdateTime()) return;
+        
         await using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
         var inputPhoto = new InputProfilePhotoStatic { Photo = fileStream };
 
         await botClient.SetMyProfilePhoto(inputPhoto);
+        SetCurrentIcon(filePath);
     }
 
     private static bool IsNotified(object entity) =>
@@ -124,4 +123,12 @@ internal class Tasks(ITelegramBotClient botClient)
 
     private static void SetNotified(object entity) =>
         DataBase.Execute($"INSERT INTO Data (Key, Value) VALUES ('{entity.GetGuid}', '')");
+
+    private static string GetCurrentIcon() => DataBase.GetValue($"SELECT Value FROM Data WHERE Key = 'Icon'");
+
+    private static void SetCurrentIcon(string icon) => DataBase.Execute($"INSERT OR UPDATE INTO Data (Key, Value) VALUES ('Icon', '{icon}')");
+
+    private static DateTime GetIconUpdateTime() => DataBase.GetValue($"SELECT Value FROM Data WHERE Key = 'IconUpdateTime'")?.ToDateTime() ?? DateTime.Now.AddHours(-1);
+
+    private static void SetIconUpdateTime() => DataBase.Execute($"INSERT OR UPDATE INTO Data (Key, Value) VALUES ('IconUpdateTime', '{DateTime.Now}')");
 }
