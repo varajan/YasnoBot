@@ -47,6 +47,7 @@ public class YasnoBot
         _ = Task.Run(async () => await Tasks.DoEveryMinute(Tasks.NewScheduleNotification()));
         _ = Task.Run(async () => await Tasks.DoEveryMinute(tasks.StatusChangedNotification()));
         _ = Task.Run(async () => await Tasks.DoEveryMinute(tasks.UpcomingBlackoutNotification()));
+        _ = Task.Run(async () => await Tasks.DoEveryMinute(tasks.UpdateIcon()));
 
         Console.WriteLine("Starting Bot.");
         await Task.Delay(Timeout.Infinite, cts.Token);
