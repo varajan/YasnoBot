@@ -158,7 +158,7 @@ public class YasnoBot
                 else
                 {
                     bool isOnline = lastRecord.Status;
-                    string icon = isOnline ? "💡" : "❌";
+                    string icon = isOnline ? "🔋" : "🪫";
                     string statusText = isOnline ? string.Empty : "NO ";
 
                     replyMessage = $"{icon} There is {statusText}electricity for {lastRecord.DateTime.GetTimeDifference()}";
