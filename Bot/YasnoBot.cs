@@ -208,7 +208,7 @@ public class YasnoBot
         foreach (var slot in schedule.Slots)
         {
             var arrow = today && now.IsBetween(slot.Start, slot.End) ? "👈" : "";
-            var status = slot.IsEnabled ? "🔋 ON" : "🪫 OFF";
+            var status = slot.IsEnabled ? "🔋" : "🪫";
             message += $"{slot.Start:HH:mm} - {slot.End:HH:mm}: {status} {arrow}\n";
         }
         return message;
