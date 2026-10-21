@@ -56,7 +56,7 @@ internal class Tasks(ITelegramBotClient botClient)
 
         if (lastRecord is null || prevRecord is null || lastRecord.Notified) return;
 
-        var icon = prevRecord.Status ? "❌" : "💡";
+        var icon = prevRecord.Status ? "🪫" : "🔋";
         var message = $"{icon} There was {(prevRecord.Status ? "" : "NO ")}electricity for {prevRecord.DateTime.GetTimeDifference()}";
 
         await NotifyUsers(message);
@@ -69,7 +69,7 @@ internal class Tasks(ITelegramBotClient botClient)
     public async Task UpcomingBlackoutNotification()
     {
         var lastRecord = HistoryService.GetLastRecord();
-        if (lastRecord is null || lastRecord.Status) return;
+        if (lastRecord is null || !lastRecord.Status) return;
 
         var schedule = ScheduleService.GetCurrent();
         if (schedule is null || schedule.Today.Slots.Length == 0) return;
@@ -79,7 +79,7 @@ internal class Tasks(ITelegramBotClient botClient)
 
         if (IsNotified(currentSlot) || !currentSlot.IsEnabled || currentSlot.End > now.AddMinutes(5)) return;
 
-        await NotifyUsers("❌ Next blackout is in 5 minutes");
+        await NotifyUsers("🪫 Next blackout is in 5 minutes");
         await UpdateIcon("Images/LightON-OFF.jpeg");
         SetNotified(currentSlot);
     }
