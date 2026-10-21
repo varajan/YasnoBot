@@ -22,6 +22,10 @@ internal class Tasks(ITelegramBotClient botClient)
 
     public static async Task OnStartUp() => await NotifyUsers("New version is available!");
 
+    private static string iconOn = "Images/LightON.jpeg";
+    private static string iconOff = "Images/LightOFF.jpeg";
+    private static string iconOnOff = "Images/LightON-OFF.jpeg";
+    
     public static async Task DoEveryMinute(Task task)
     {
         while (true)
@@ -50,6 +54,14 @@ internal class Tasks(ITelegramBotClient botClient)
         }
     }
 
+    public async Task UpdateIcon()
+    {
+        var currentStatus = HistoryService.GetLastRecord();
+
+        if (currentStatus is null || !currentStatus.Status || currentStatus.DateTime.AddMinutes(5) < DateTime.Now) return;
+        await UpdateIcon(iconOn);
+    }
+    
     public async Task StatusChangedNotification()
     {
         var lastRecord = HistoryService.GetLastRecord();
@@ -81,7 +93,7 @@ internal class Tasks(ITelegramBotClient botClient)
         if (IsNotified(currentSlot) || !currentSlot.IsEnabled || currentSlot.End > now.AddMinutes(5)) return;
 
         await NotifyUsers("🪫 Next blackout is in 5 minutes");
-        await UpdateIcon("Images/LightON-OFF.jpeg");
+        await UpdateIcon(iconOnOff);
         SetNotified(currentSlot);
     }
 
@@ -102,7 +114,7 @@ internal class Tasks(ITelegramBotClient botClient)
 
     private async Task UpdateIcon(StatisticsDto previousData)
     {
-        var filePath = previousData.Status ? "Images/LightOFF.jpeg" : "Images/LightON.jpeg";
+        var filePath = previousData.Status ? iconOff : iconOn;
         await UpdateIcon(filePath);
     }
 
