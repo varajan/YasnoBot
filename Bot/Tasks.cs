@@ -114,7 +114,7 @@ internal class Tasks(ITelegramBotClient botClient)
 
     private async Task UpdateIcon(StatisticsDto previousData)
     {
-        var filePath = previousData.Status ? iconOff : iconOff;
+        var filePath = previousData.Status ? iconOff : iconOn;
         await UpdateIcon(filePath);
     }
 
