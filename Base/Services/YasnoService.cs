@@ -46,7 +46,7 @@ public class YasnoService(IApi api, IDataBase database, ILogger logger) : ISched
         TimeOnly end = slot.End == 1440
             ? new TimeOnly(23, 59, 59, 999)
             : new TimeOnly(slot.End / 60, slot.End % 60);
-        bool isEnabled = slot.Type == "Definite";
+        bool isEnabled = slot.Type == "NotPlanned";
 
         return new ScheduleSlotDto { Start = start, End = end, IsEnabled = isEnabled };
     }
