@@ -67,7 +67,7 @@ internal class Tasks(ITelegramBotClient botClient)
         var lastRecord = HistoryService.GetLastRecord();
         var prevRecord = HistoryService.GetPreviousRecord();
 
-        if (lastRecord is null || prevRecord is null || lastRecord.Notified) return;
+        if (lastRecord is null || prevRecord is null || IsNotified(lastRecord)) return;
 
         var icon = prevRecord.Status ? "🪫" : "🔋";
         var message = $"{icon} There was {(prevRecord.Status ? "" : "NO ")}electricity for {prevRecord.DateTime.GetTimeDifference()}";
@@ -75,8 +75,7 @@ internal class Tasks(ITelegramBotClient botClient)
         await NotifyUsers(message);
         await UpdateIcon(prevRecord!);
 
-        lastRecord.Notified = true;
-        HistoryService.Update(lastRecord);
+        SetNotified(lastRecord);
     }
 
     public async Task UpcomingBlackoutNotification()
