@@ -20,7 +20,6 @@ public class StatusService(ILogger logger) : IStatusService
             Thread.Sleep(i * 2_000);
         }
 
-        logger.Log($"IsRunning check: {areHostsUp}");
         return areHostsUp;
     }
 
