@@ -46,12 +46,12 @@ internal class Tasks(ITelegramBotClient botClient)
     public static async Task NewScheduleNotification()
     {
         var schedule = ScheduleService.GetCurrent();
-        if (schedule is not null && !IsNotified(schedule))
-        {
-            await NotifyUsers("⚠️ New Schedule is available!");
-            ScheduleService.SetCurrent(schedule);
-            SetNotified(schedule);
-        }
+        if (schedule is null || IsNotified(schedule)) return;
+
+        Logger.Log("New Schedule is available!");
+        await NotifyUsers("⚠️ New Schedule is available!");
+        ScheduleService.SetCurrent(schedule);
+        SetNotified(schedule);
     }
 
     public async Task UpdateIcon()
@@ -92,6 +92,7 @@ internal class Tasks(ITelegramBotClient botClient)
 
         if (IsNotified(currentSlot) || !currentSlot.IsEnabled || currentSlot.End > now.AddMinutes(5)) return;
 
+        Logger.Log("Next blackout is in 5 minutes");
         await NotifyUsers("🪫 Next blackout is in 5 minutes");
         await UpdateIcon(iconOnOff);
         SetNotified(currentSlot);
@@ -128,13 +129,14 @@ internal class Tasks(ITelegramBotClient botClient)
 
         await botClient.SetMyProfilePhoto(inputPhoto);
         SetCurrentIcon(filePath);
+        Logger.Log($"Update Icon: {filePath}");
     }
 
     private static bool IsNotified(object entity) =>
-        DataBase.GetRows($"SELECT * FROM Data WHERE Key = '{entity.GetGuid}'").Any();
+        DataBase.GetRows($"SELECT * FROM Data WHERE Key = '{entity.GetGuid()}'").Any();
 
     private static void SetNotified(object entity) =>
-        DataBase.Execute($"INSERT INTO Data (Key, Value) VALUES ('{entity.GetGuid}', '')");
+        DataBase.Execute($"INSERT INTO Data (Key, Value) VALUES ('{entity.GetGuid()}', '')");
 
     private static string GetCurrentIcon() => DataBase.GetValue($"SELECT Value FROM Data WHERE Key = 'Icon'");
 
