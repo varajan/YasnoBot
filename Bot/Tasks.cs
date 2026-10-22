@@ -50,7 +50,6 @@ internal class Tasks(ITelegramBotClient botClient)
 
         Logger.Log("New Schedule is available!");
         await NotifyUsers("⚠️ New Schedule is available!");
-        ScheduleService.SetCurrent(schedule);
         SetNotified(schedule);
     }
 
@@ -58,7 +57,7 @@ internal class Tasks(ITelegramBotClient botClient)
     {
         var currentStatus = HistoryService.GetLastRecord();
 
-        if (currentStatus is null || !currentStatus.Status || currentStatus.DateTime.AddMinutes(5) < DateTime.Now) return;
+        if (currentStatus is null || !currentStatus.Status || currentStatus.DateTime.AddMinutes(15) < DateTime.Now) return;
         await UpdateIcon(iconOn);
     }
     
@@ -73,7 +72,7 @@ internal class Tasks(ITelegramBotClient botClient)
         var message = $"{icon} There was {(prevRecord.Status ? "" : "NO ")}electricity for {prevRecord.DateTime.GetTimeDifference()}";
 
         await NotifyUsers(message);
-        await UpdateIcon(prevRecord!);
+        await UpdateIcon(lastRecord.Status ? iconOn : iconOff);
 
         SetNotified(lastRecord);
     }
@@ -112,12 +111,6 @@ internal class Tasks(ITelegramBotClient botClient)
         }
     }
 
-    private async Task UpdateIcon(StatisticsDto previousData)
-    {
-        var filePath = previousData.Status ? iconOff : iconOn;
-        await UpdateIcon(filePath);
-    }
-
     private async Task UpdateIcon(string filePath)
     {
         if (filePath == GetCurrentIcon()) return;
@@ -135,7 +128,7 @@ internal class Tasks(ITelegramBotClient botClient)
         DataBase.GetRows($"SELECT * FROM Data WHERE Key = '{entity.GetGuid()}'").Any();
 
     private static void SetNotified(object entity) =>
-        DataBase.Execute($"INSERT INTO Data (Key, Value) VALUES ('{entity.GetGuid()}', '')");
+        DataBase.Execute($"INSERT INTO Data (Key, Value) VALUES ('{entity.GetGuid()}', 'done')");
 
     private static string GetCurrentIcon() => DataBase.GetValue($"SELECT Value FROM Data WHERE Key = 'Icon'");
 
