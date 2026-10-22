@@ -26,6 +26,7 @@ public class Service
 
                 if (currentSchedule is null || !currentSchedule.IsEqual(newSchedule))
                 {
+                    logger.Log("Updating schedule.");
                     scheduleService.SetCurrent(newSchedule);
                 }
             }
