@@ -15,17 +15,7 @@ public class FileLogger : ILogger
             {
                 if (!File.Exists(LogFile)) return string.Empty;
 
-                var lastLines = new Queue<string>(10);
-
-                foreach (var line in File.ReadLines(LogFile))
-                {
-                    if (lastLines.Count == 10)
-                    {
-                        lastLines.Dequeue();
-                    }
-                    lastLines.Enqueue(line);
-                }
-
+                var lastLines = File.ReadLines(LogFile).TakeLast(10).ToList();
                 return string.Join(Environment.NewLine, lastLines);
             }
             catch { return string.Empty; }
