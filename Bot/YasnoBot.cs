@@ -24,6 +24,7 @@ public class YasnoBot
     private static ILogger Logger => ServicesProvider.Get<ILogger>();
     private static IUserRepository UserRepository => ServicesProvider.Get<IUserRepository>();
     private static INotifyService NotifyService => ServicesProvider.Get<INotifyService>();
+    private static IDataBase DataBase => ServicesProvider.Get<IDataBase>();
 
     private static async Task Main()
     {
@@ -44,10 +45,10 @@ public class YasnoBot
         );
 
         await Tasks.OnStartUp();
-        _ = Task.Run(async () => await Tasks.DoEveryMinute(Tasks.NewScheduleNotification()));
-        _ = Task.Run(async () => await Tasks.DoEveryMinute(tasks.StatusChangedNotification()));
-        _ = Task.Run(async () => await Tasks.DoEveryMinute(tasks.UpcomingBlackoutNotification()));
-        _ = Task.Run(async () => await Tasks.DoEveryMinute(tasks.UpdateIcon()));
+        _ = Task.Run(async () => await Tasks.DoEveryMinute(() => Tasks.NewScheduleNotification()));
+        _ = Task.Run(async () => await Tasks.DoEveryMinute(() => tasks.StatusChangedNotification()));
+        _ = Task.Run(async () => await Tasks.DoEveryMinute(() => tasks.UpcomingBlackoutNotification()));
+        _ = Task.Run(async () => await Tasks.DoEveryMinute(() => tasks.UpdateIcon()));
 
         Console.WriteLine("Starting Bot.");
         await Task.Delay(Timeout.Infinite, cts.Token);
@@ -131,6 +132,99 @@ public class YasnoBot
                 await NotifyService.Notify(message.Chat.Id, Logger.TopLogs);
             }
             // Admin commands
+
+            // TEST commands
+
+            if (message.Text == "/test")
+            {
+                await NotifyService.Notify(message.Chat.Id, "blackout, soon, light, schedule");
+                return;
+            }
+
+            if (message.Text.Contains("/test"))
+            {
+                var task = message.Text.Split('/').Last().Trim();
+
+                switch (task)
+                {
+                    case "blackout":
+                        // write light - now-5
+                        var dateTime = DateTime.Now.AddMinutes(-5).ToString("yyyy-MM-dd HH:mm:ss");
+                        DataBase.Execute($"INSERT INTO History (DateTime, Active, Notified) VALUES ('{dateTime}', {true}, 0)");
+
+                        // write blackout - now
+                        dateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                        DataBase.Execute($"INSERT INTO History (DateTime, Active, Notified) VALUES ('{dateTime}', {false}, 0)");
+                        break;
+
+                    case "soon":
+                        // schedule, where next shutdown is in 5 min
+                        var nextBlackout = DateTime.Now.AddMinutes(5);
+
+                        var newSchedule = new TwoDayScheduleDto
+                        {
+                            Today = new()
+                            {
+                                Slots =
+                                [
+                                    new ScheduleSlotDto{ Start = new TimeOnly(0, 0), End = new TimeOnly(nextBlackout.Hour, nextBlackout.Minute), IsEnabled = true },
+                                    new ScheduleSlotDto{ Start = new TimeOnly(nextBlackout.Hour, nextBlackout.Minute), End = new TimeOnly(23, 59), IsEnabled = false },
+                                ]
+                            },
+                            Tomorrow = new()
+                            {
+                                Slots =
+                                [
+                                    new ScheduleSlotDto{ Start = new TimeOnly(0, 0), End = new TimeOnly(nextBlackout.Hour, nextBlackout.Minute), IsEnabled = false },
+                                    new ScheduleSlotDto{ Start = new TimeOnly(nextBlackout.Hour, nextBlackout.Minute), End = new TimeOnly(23, 59), IsEnabled = true },
+                                ]
+                            }
+                        };
+                        DataBase.Execute($"INSERT OR REPLACE INTO Data (Key, Value) VALUES ('Schedule', '{newSchedule.Serialize()}')");
+
+                        dateTime = DateTime.Now.AddMinutes(-1).ToString("yyyy-MM-dd HH:mm:ss");
+                        DataBase.Execute($"INSERT INTO History (DateTime, Active, Notified) VALUES ('{dateTime}', {true}, 0)");
+                        break;
+
+                    case "light":
+                        // write blackout - now-5
+                        dateTime = DateTime.Now.AddMinutes(-5).ToString("yyyy-MM-dd HH:mm:ss");
+                        DataBase.Execute($"INSERT INTO History (DateTime, Active, Notified) VALUES ('{dateTime}', {false}, 0)");
+
+                        // write light - now
+                        dateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
+                        DataBase.Execute($"INSERT INTO History (DateTime, Active, Notified) VALUES ('{dateTime}', {true}, 0)");
+                        break;
+
+                    case "schedule":
+                        var now = DateTime.Now;
+                        newSchedule = new TwoDayScheduleDto
+                        {
+                            Today = new()
+                            {
+                                Slots =
+                                [
+                                    new ScheduleSlotDto{ Start = new TimeOnly(0, 0), End = new TimeOnly(now.Hour, now.Minute), IsEnabled = true },
+                                    new ScheduleSlotDto{ Start = new TimeOnly(now.Hour, now.Minute), End = new TimeOnly(23, 59), IsEnabled = false },
+                                ]
+                            },
+                            Tomorrow = new()
+                            {
+                                Slots =
+                                [
+                                    new ScheduleSlotDto{ Start = new TimeOnly(0, 0), End = new TimeOnly(now.Hour, now.Minute), IsEnabled = false },
+                                    new ScheduleSlotDto{ Start = new TimeOnly(now.Hour, now.Minute), End = new TimeOnly(23, 59), IsEnabled = true },
+                                ]
+                            }
+                        };
+                        DataBase.Execute($"INSERT OR REPLACE INTO Data (Key, Value) VALUES ('Schedule', '{newSchedule.Serialize()}')");
+                        break;
+                }
+
+                return;
+            }
+
+            // TEST commands
 
             if (user.Notify && message.Text == msgOff)
             {

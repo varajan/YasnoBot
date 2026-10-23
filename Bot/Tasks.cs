@@ -22,17 +22,17 @@ internal class Tasks(ITelegramBotClient botClient)
 
     public static async Task OnStartUp() => await NotifyUsers("New version is available!");
 
-    private static string iconOn = "Images/LightON.jpeg";
-    private static string iconOff = "Images/LightOFF.jpeg";
-    private static string iconOnOff = "Images/LightON-OFF.jpeg";
+    private static readonly string iconOn = "Images/LightON.jpeg";
+    private static readonly string iconOff = "Images/LightOFF.jpeg";
+    private static readonly string iconOnOff = "Images/LightON-OFF.jpeg";
 
-    public static async Task DoEveryMinute(Task task)
+    public static async Task DoEveryMinute(Func<Task> task)
     {
         while (true)
         {
             try
             {
-                await task;
+                await task();
                 var timeout = DateTime.Now.TillNextMinute();
                 await Task.Delay(timeout);
             }
@@ -69,7 +69,7 @@ internal class Tasks(ITelegramBotClient botClient)
         if (lastRecord is null || prevRecord is null || IsNotified(lastRecord)) return;
 
         var icon = prevRecord.Status ? "🪫" : "🔋";
-        var message = $"{icon} There was {(prevRecord.Status ? "" : "NO ")}electricity for {prevRecord.DateTime.GetTimeDifference()}";
+        var message = $"{icon} There was {(prevRecord.Status ? "" : "NO ")}electricity for {prevRecord.DateTime.GetTimeDifference(lastRecord.DateTime)}";
 
         await NotifyUsers(message);
         await UpdateIcon(lastRecord.Status ? iconOn : iconOff);
