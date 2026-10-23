@@ -24,6 +24,7 @@ internal class Tasks(ITelegramBotClient botClient)
     {
         var versionPath = Path.Combine(AppContext.BaseDirectory, "version.txt");
         var version = File.ReadAllText(versionPath);
+
         await NotifyUsers($"New version is available: {version}");
     }
 
