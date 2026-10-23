@@ -20,7 +20,12 @@ internal class Tasks(ITelegramBotClient botClient)
 
     private static List<UserDto> UsersToNotify => UserRepository.GetAll().Where(u => u.Notify).ToList();
 
-    public static async Task OnStartUp() => await NotifyUsers("New version is available!");
+    public static async Task OnStartUp()
+    {
+        var versionPath = Path.Combine(AppContext.BaseDirectory, "version.txt");
+        var version = File.ReadAllText(versionPath);
+        await NotifyUsers($"New version is available: {version}");
+    }
 
     private static readonly string iconOn = "Images/LightON.jpeg";
     private static readonly string iconOff = "Images/LightOFF.jpeg";
@@ -49,13 +54,20 @@ internal class Tasks(ITelegramBotClient botClient)
         if (schedule is null || IsNotified(schedule)) return;
 
         Logger.Log("New Schedule is available!");
-        await NotifyUsers("⚠️ New Schedule is available!");
+        await NotifyUsers(schedule.Today.IsEmergence ? "⚠ Emergency blackouts!" : "⚠️ New Schedule is available!");
         SetNotified(schedule);
     }
 
     public async Task UpdateIcon()
     {
+        var schedule = ScheduleService.GetCurrent();
         var currentStatus = HistoryService.GetLastRecord();
+
+        if (currentStatus is not null && currentStatus.Status && schedule.Today.IsEmergence)
+        {
+            await UpdateIcon(iconOnOff);
+            return;
+        }
 
         if (currentStatus is null || !currentStatus.Status || currentStatus.DateTime.AddMinutes(15) < DateTime.Now) return;
         await UpdateIcon(iconOn);

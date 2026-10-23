@@ -137,7 +137,7 @@ public class YasnoBot
 
             if (message.Text == "/test")
             {
-                await NotifyService.Notify(message.Chat.Id, "blackout, soon, light, schedule");
+                await NotifyService.Notify(message.Chat.Id, "blackout, soon, light, schedule, emergency");
                 return;
             }
 
@@ -150,11 +150,11 @@ public class YasnoBot
                     case "blackout":
                         // write light - now-5
                         var dateTime = DateTime.Now.AddMinutes(-5).ToString("yyyy-MM-dd HH:mm:ss");
-                        DataBase.Execute($"INSERT INTO History (DateTime, Active, Notified) VALUES ('{dateTime}', {true}, 0)");
+                        DataBase.Execute($"INSERT INTO History (DateTime, Active) VALUES ('{dateTime}', {true})");
 
                         // write blackout - now
                         dateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                        DataBase.Execute($"INSERT INTO History (DateTime, Active, Notified) VALUES ('{dateTime}', {false}, 0)");
+                        DataBase.Execute($"INSERT INTO History (DateTime, Active) VALUES ('{dateTime}', {false})");
                         break;
 
                     case "soon":
@@ -183,17 +183,17 @@ public class YasnoBot
                         DataBase.Execute($"INSERT OR REPLACE INTO Data (Key, Value) VALUES ('Schedule', '{newSchedule.Serialize()}')");
 
                         dateTime = DateTime.Now.AddMinutes(-1).ToString("yyyy-MM-dd HH:mm:ss");
-                        DataBase.Execute($"INSERT INTO History (DateTime, Active, Notified) VALUES ('{dateTime}', {true}, 0)");
+                        DataBase.Execute($"INSERT INTO History (DateTime, Active) VALUES ('{dateTime}', {true})");
                         break;
 
                     case "light":
                         // write blackout - now-5
                         dateTime = DateTime.Now.AddMinutes(-5).ToString("yyyy-MM-dd HH:mm:ss");
-                        DataBase.Execute($"INSERT INTO History (DateTime, Active, Notified) VALUES ('{dateTime}', {false}, 0)");
+                        DataBase.Execute($"INSERT INTO History (DateTime, Active) VALUES ('{dateTime}', {false})");
 
                         // write light - now
                         dateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                        DataBase.Execute($"INSERT INTO History (DateTime, Active, Notified) VALUES ('{dateTime}', {true}, 0)");
+                        DataBase.Execute($"INSERT INTO History (DateTime, Active) VALUES ('{dateTime}', {true})");
                         break;
 
                     case "schedule":
@@ -216,6 +216,15 @@ public class YasnoBot
                                     new ScheduleSlotDto{ Start = new TimeOnly(now.Hour, now.Minute), End = new TimeOnly(23, 59), IsEnabled = true },
                                 ]
                             }
+                        };
+                        DataBase.Execute($"INSERT OR REPLACE INTO Data (Key, Value) VALUES ('Schedule', '{newSchedule.Serialize()}')");
+                        break;
+
+                    case "emergency":
+                        newSchedule = new TwoDayScheduleDto
+                        {
+                            Today = new() { Slots = [], IsEmergence = true },
+                            Tomorrow = new() { Slots = [], IsEmergence = true }
                         };
                         DataBase.Execute($"INSERT OR REPLACE INTO Data (Key, Value) VALUES ('Schedule', '{newSchedule.Serialize()}')");
                         break;
@@ -300,6 +309,8 @@ public class YasnoBot
 
         var now = new TimeOnly(DateTime.Now.Hour, DateTime.Now.Minute);
         var message = "Schedule:\n";
+        if (schedule.IsEmergence) message += "⚠ Emergency blackouts";
+
         foreach (var slot in schedule.Slots)
         {
             var arrow = today && now.IsBetween(slot.Start, slot.End) ? "👈" : "";

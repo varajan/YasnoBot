@@ -8,6 +8,7 @@ public class TwoDayScheduleDto
 
 public class ScheduleDto
 {
+    public bool IsEmergence { get; set; }
     public ScheduleSlotDto[] Slots { get; set; }
 }
 
