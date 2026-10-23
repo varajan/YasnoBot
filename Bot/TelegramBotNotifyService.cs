@@ -22,7 +22,7 @@ public class TelegramBotNotifyService(ITelegramBotClient bot) : INotifyService
         await bot.SendMessage(userId, message, replyMarkup: rkm, parseMode: ParseMode.Markdown);
     }
 
-    public async Task Notify(long userId, string message) => await bot.SendMessage(userId, message, parseMode: ParseMode.Markdown);
+    public async Task Notify(long userId, string message) => await bot.SendMessage(userId, message, parseMode: ParseMode.None);
 
     private static ReplyKeyboardMarkup GetButtonsFromMatrix(List<List<string>> buttons)
     {

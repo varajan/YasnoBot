@@ -10,9 +10,9 @@ public static class DateTimeExtensions
         return delay;
     }
 
-    public static string GetTimeDifference(this DateTime dateTime)
+    public static string GetTimeDifference(this DateTime dateFrom, DateTime? dateTo = null)
     {
-        TimeSpan diff = (dateTime - DateTime.Now).Duration();
+        TimeSpan diff = (dateFrom - (dateTo ?? DateTime.Now)).Duration();
 
         var parts = new List<string>();
 
