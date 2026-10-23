@@ -4,8 +4,8 @@ using Base.Extensions;
 using Base.Interfaces;
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using YasnoLogger.Interfaces;
 using YasnoBot.YasnoLogger.Extensions;
+using YasnoLogger.Interfaces;
 
 namespace Bot;
 
@@ -25,7 +25,7 @@ internal class Tasks(ITelegramBotClient botClient)
     private static string iconOn = "Images/LightON.jpeg";
     private static string iconOff = "Images/LightOFF.jpeg";
     private static string iconOnOff = "Images/LightON-OFF.jpeg";
-    
+
     public static async Task DoEveryMinute(Task task)
     {
         while (true)
@@ -60,7 +60,7 @@ internal class Tasks(ITelegramBotClient botClient)
         if (currentStatus is null || !currentStatus.Status || currentStatus.DateTime.AddMinutes(15) < DateTime.Now) return;
         await UpdateIcon(iconOn);
     }
-    
+
     public async Task StatusChangedNotification()
     {
         var lastRecord = HistoryService.GetLastRecord();
@@ -115,12 +115,13 @@ internal class Tasks(ITelegramBotClient botClient)
     {
         if (filePath == GetCurrentIcon()) return;
         if (DateTime.Now.AddMinutes(-5) > GetIconUpdateTime()) return;
-        
+
         await using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
         var inputPhoto = new InputProfilePhotoStatic { Photo = fileStream };
 
         await botClient.SetMyProfilePhoto(inputPhoto);
         SetCurrentIcon(filePath);
+        SetIconUpdateTime();
         Logger.Log($"Update Icon: {filePath}");
     }
 
@@ -134,7 +135,17 @@ internal class Tasks(ITelegramBotClient botClient)
 
     private static void SetCurrentIcon(string icon) => DataBase.Execute($"INSERT OR UPDATE INTO Data (Key, Value) VALUES ('Icon', '{icon}')");
 
-    private static DateTime GetIconUpdateTime() => DataBase.GetValue($"SELECT Value FROM Data WHERE Key = 'IconUpdateTime'")?.ToDateTime() ?? DateTime.Now.AddHours(-1);
+    private static DateTime GetIconUpdateTime()
+    {
+        try
+        {
+            return DataBase.GetValue($"SELECT Value FROM Data WHERE Key = 'IconUpdateTime'").ToDateTime();
+        }
+        catch
+        {
+            return DateTime.Now.AddHours(-1);
+        }
+    }
 
     private static void SetIconUpdateTime() => DataBase.Execute($"INSERT OR UPDATE INTO Data (Key, Value) VALUES ('IconUpdateTime', '{DateTime.Now}')");
 }
