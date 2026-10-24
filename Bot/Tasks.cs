@@ -32,14 +32,14 @@ internal class Tasks(ITelegramBotClient botClient)
     private static readonly string iconOff = "Images/LightOFF.jpeg";
     private static readonly string iconOnOff = "Images/LightON-OFF.jpeg";
 
-    public static async Task DoEveryMinute(Func<Task> task)
+    public static async Task DoEveryMinute(Func<Task> task, int delay)
     {
         while (true)
         {
             try
             {
                 await task();
-                var timeout = DateTime.Now.TillNextMinute();
+                var timeout = (delay * 1000) + DateTime.Now.TillNextMinute();
                 await Task.Delay(timeout);
             }
             catch (Exception e)
@@ -55,7 +55,7 @@ internal class Tasks(ITelegramBotClient botClient)
         if (schedule is null || IsNotified(schedule)) return;
 
         Logger.Log("New Schedule is available!");
-        await NotifyUsers(schedule.Today.IsEmergence ? "⚠ Emergency blackouts!" : "⚠️ New Schedule is available!");
+        await NotifyUsers(schedule.Today.IsEmergence ? "‼ Emergency blackouts!" : "🗓 New Schedule is available!");
         SetNotified(schedule);
     }
 

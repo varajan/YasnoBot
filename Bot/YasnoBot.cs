@@ -45,10 +45,10 @@ public class YasnoBot
         );
 
         await Tasks.OnStartUp();
-        _ = Task.Run(async () => await Tasks.DoEveryMinute(() => Tasks.NewScheduleNotification()));
-        _ = Task.Run(async () => await Tasks.DoEveryMinute(() => tasks.StatusChangedNotification()));
-        _ = Task.Run(async () => await Tasks.DoEveryMinute(() => tasks.UpcomingBlackoutNotification()));
-        _ = Task.Run(async () => await Tasks.DoEveryMinute(() => tasks.UpdateIcon()));
+        _ = Task.Run(async () => await Tasks.DoEveryMinute(() => tasks.StatusChangedNotification(), 0));
+        _ = Task.Run(async () => await Tasks.DoEveryMinute(() => Tasks.NewScheduleNotification(), 5));
+        _ = Task.Run(async () => await Tasks.DoEveryMinute(() => tasks.UpcomingBlackoutNotification(), 10));
+        _ = Task.Run(async () => await Tasks.DoEveryMinute(() => tasks.UpdateIcon(), 15));
 
         Console.WriteLine("Starting Bot.");
         await Task.Delay(Timeout.Infinite, cts.Token);
