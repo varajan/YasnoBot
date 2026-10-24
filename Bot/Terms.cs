@@ -13,11 +13,11 @@ public class Terms
     public const string NoDataAvailable = "Немає даних";
     public static string EmergencyBlackout => $"{Icons.Warning} Аварійні відключення";
 
-    public static string ThereIsElectricity => $"{Icons.BatteryFull} Світло є вже {0}";
-    public static string ThereIsNoElectricity => $"{Icons.BatteryEmpty} Світла немає вже {0}";
+    public static string ThereIsElectricity => $"{Icons.BatteryFull} Світло є вже {{0}}";
+    public static string ThereIsNoElectricity => $"{Icons.BatteryEmpty} Світла немає вже {{0}}";
 
-    public static string ThereWasElectricity => $"{Icons.BatteryEmpty} Світло було {0}";
-    public static string ThereWasNoElectricity => $"{Icons.BatteryFull} Світла не було {0}";
+    public static string ThereWasElectricity => $"{Icons.BatteryEmpty} Світло було {{0}}";
+    public static string ThereWasNoElectricity => $"{Icons.BatteryFull} Світла не було {{0}}";
 
     public const string NotificationsOn = "Сповіщення увімкнено";
     public const string NotificationsOff = "Сповіщення вимкнено";
