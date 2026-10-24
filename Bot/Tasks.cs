@@ -78,7 +78,8 @@ internal class Tasks(ITelegramBotClient botClient)
         var now = new TimeOnly(DateTime.Now.Hour, DateTime.Now.Minute);
         var in5minutes = now.AddMinutes(5);
         var currentSlot = schedule is null ? default : schedule.Today.Slots.Last(s => s.Start < now);
-        if (currentSlot?.Status == Status.PowerOn && currentSlot.End < in5minutes)
+        if (currentSlot?.Status == Status.Blackout || 
+           (currentSlot?.Status == Status.PowerOn && currentSlot.End < in5minutes))
         {
             await UpdateIcon(iconOnOff);
             return;
@@ -156,7 +157,7 @@ internal class Tasks(ITelegramBotClient botClient)
 
     private static string GetCurrentIcon() => DataBase.GetValue($"SELECT Value FROM Data WHERE Key = 'Icon'");
 
-    private static void SetCurrentIcon(string icon) => DataBase.Execute($"INSERT OR UPDATE INTO Data (Key, Value) VALUES ('Icon', '{icon}')");
+    private static void SetCurrentIcon(string icon) => DataBase.Execute($"INSERT OR REPLACE INTO Data (Key, Value) VALUES ('Icon', '{icon}')");
 
     private static DateTime GetIconUpdateTime()
     {
@@ -170,5 +171,5 @@ internal class Tasks(ITelegramBotClient botClient)
         }
     }
 
-    private static void SetIconUpdateTime() => DataBase.Execute($"INSERT OR UPDATE INTO Data (Key, Value) VALUES ('IconUpdateTime', '{DateTime.Now}')");
+    private static void SetIconUpdateTime() => DataBase.Execute($"INSERT OR REPLACE INTO Data (Key, Value) VALUES ('IconUpdateTime', '{DateTime.Now}')");
 }
