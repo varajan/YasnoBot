@@ -23,9 +23,9 @@ internal class Tasks(ITelegramBotClient botClient)
     public static async Task OnStartUp()
     {
         var versionPath = Path.Combine(AppContext.BaseDirectory, "version.txt");
-        var version = File.ReadAllText(versionPath);
+        var version = File.Exists(versionPath) ? File.ReadAllText(versionPath) : string.Empty;
 
-        await NotifyUsers($"New version is available: {version}");
+        await NotifyUsers($"New version is available {version}");
     }
 
     private static readonly string iconOn = "Images/LightON.jpeg";

@@ -26,7 +26,7 @@ public class HistoryService(IDataBase dataBase) : IHistoryService
     public void AddRecord(Status status)
     {
         var dateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-        dataBase.Execute($"INSERT INTO History (DateTime, Status) VALUES ('{dateTime}', {status})");
+        dataBase.Execute($"INSERT INTO History (DateTime, Status) VALUES ('{dateTime}', {(int)status})");
     }
 
     private static StatisticsDto GetRecord(Dictionary<string, string> record) =>

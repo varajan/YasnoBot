@@ -150,11 +150,11 @@ public class YasnoBot
                     case "blackout":
                         // write light - now-5
                         var dateTime = DateTime.Now.AddMinutes(-5).ToString("yyyy-MM-dd HH:mm:ss");
-                        DataBase.Execute($"INSERT INTO History (DateTime, Status) VALUES ('{dateTime}', {Status.PowerOn})");
+                        DataBase.Execute($"INSERT INTO History (DateTime, Status) VALUES ('{dateTime}', {(int)Status.PowerOn})");
 
                         // write blackout - now
                         dateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                        DataBase.Execute($"INSERT INTO History (DateTime, Status) VALUES ('{dateTime}', {Status.Blackout})");
+                        DataBase.Execute($"INSERT INTO History (DateTime, Status) VALUES ('{dateTime}', {(int)Status.Blackout})");
                         break;
 
                     case "soon":
@@ -183,17 +183,17 @@ public class YasnoBot
                         DataBase.Execute($"INSERT OR REPLACE INTO Data (Key, Value) VALUES ('Schedule', '{newSchedule.Serialize()}')");
 
                         dateTime = DateTime.Now.AddMinutes(-1).ToString("yyyy-MM-dd HH:mm:ss");
-                        DataBase.Execute($"INSERT INTO History (DateTime, Status) VALUES ('{dateTime}', {Status.PowerOn})");
+                        DataBase.Execute($"INSERT INTO History (DateTime, Status) VALUES ('{dateTime}', {(int)Status.PowerOn})");
                         break;
 
                     case "light":
                         // write blackout - now-5
                         dateTime = DateTime.Now.AddMinutes(-5).ToString("yyyy-MM-dd HH:mm:ss");
-                        DataBase.Execute($"INSERT INTO History (DateTime, Status) VALUES ('{dateTime}', {Status.Blackout})");
+                        DataBase.Execute($"INSERT INTO History (DateTime, Status) VALUES ('{dateTime}', {(int)Status.Blackout})");
 
                         // write light - now
                         dateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                        DataBase.Execute($"INSERT INTO History (DateTime, Status) VALUES ('{dateTime}', {Status.PowerOn})");
+                        DataBase.Execute($"INSERT INTO History (DateTime, Status) VALUES ('{dateTime}', {(int)Status.PowerOn})");
                         break;
 
                     case "schedule":
