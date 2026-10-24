@@ -15,7 +15,7 @@ public class FileLogger : ILogger
             {
                 if (!File.Exists(LogFile)) return string.Empty;
 
-                var lastLines = File.ReadLines(LogFile).TakeLast(10).ToList();
+                var lastLines = File.ReadLines(LogFile).TakeLast(50).ToList();
                 return string.Join(Environment.NewLine, lastLines);
             }
             catch { return string.Empty; }
