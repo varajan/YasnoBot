@@ -54,6 +54,7 @@ public class SQLiteDataBase(ILogger logger) : IDataBase
         try
         {
             cmd.ExecuteNonQuery();
+            logger.Log(sql);
         }
         catch (Exception e)
         {
