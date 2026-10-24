@@ -17,17 +17,26 @@ public static class DateTimeExtensions
         var parts = new List<string>();
 
         if (diff.Days > 0)
-            parts.Add($"{diff.Days} {(diff.Days == 1 ? "day" : "days")}");
+            parts.Add($"{diff.Days} {GetDeclension(diff.Days, "день", "дні", "днів")}");
 
         if (diff.Hours > 0)
-            parts.Add($"{diff.Hours} {(diff.Hours == 1 ? "hour" : "hours")}");
+            parts.Add($"{diff.Hours} {GetDeclension(diff.Hours, "година", "години", "годин")}");
 
         if (diff.Minutes > 0)
-            parts.Add($"{diff.Minutes} {(diff.Minutes == 1 ? "minute" : "minutes")}");
+            parts.Add($"{diff.Minutes} {GetDeclension(diff.Minutes, "хвилина", "хвилини", "хвилин")}");
 
-        if (diff.Seconds > 0)
-            parts.Add($"{diff.Seconds} {(diff.Seconds == 1 ? "second" : "seconds")}");
+        return parts.Count > 0 ? string.Join(", ", parts) : "менше хвилини";
+    }
 
-        return parts.Count > 0 ? string.Join(", ", parts) : "0 seconds";
+    private static string GetDeclension(int number, string form1, string form2, string form5)
+    {
+        int n = Math.Abs(number) % 100;
+        int n1 = n % 10;
+
+        if (n > 10 && n < 20) return form5;
+        if (n1 > 1 && n1 < 5) return form2;
+        if (n1 == 1) return form1;
+
+        return form5;
     }
 }

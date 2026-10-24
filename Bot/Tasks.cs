@@ -25,7 +25,7 @@ internal class Tasks(ITelegramBotClient botClient)
         var versionPath = Path.Combine(AppContext.BaseDirectory, "version.txt");
         var version = File.Exists(versionPath) ? File.ReadAllText(versionPath) : string.Empty;
 
-        await NotifyUsers($"New version is available {version}");
+        await NotifyUsers(string.Format(Terms.NewVersionMessage, version));
     }
 
     private static readonly string iconOn = "Images/LightON.jpeg";
@@ -55,7 +55,7 @@ internal class Tasks(ITelegramBotClient botClient)
         if (schedule is null || IsNotified(schedule)) return;
 
         Logger.Log("New Schedule is available!");
-        await NotifyUsers(schedule.Today.IsEmergence ? "‼ Emergency blackouts!" : "🗓 New Schedule is available!");
+        await NotifyUsers(schedule.Today.IsEmergence ? Terms.EmergencyBlackoutMessage : Terms.NewScheduleMessage);
         SetNotified(schedule);
     }
 
@@ -93,8 +93,8 @@ internal class Tasks(ITelegramBotClient botClient)
         var previousState = HistoryService.GetLastRecord();
         if (currentState is null || previousState is null || IsNotified(currentState)) return;
 
-        var icon = currentState.Status == Status.PowerOn ? "🔋" : "🪫";
-        var message = $"{icon} There was {(previousState.Status == Status.PowerOn ? "" : "NO ")}electricity for {previousState.DateTime.GetTimeDifference(currentState.DateTime)}";
+        var messageTemplate = currentState.Status == Status.PowerOn ? Terms.ThereWasNoElectricity : Terms.ThereWasElectricity;
+        var message = string.Format(messageTemplate, previousState.DateTime.GetTimeDifference(currentState.DateTime));
 
         await NotifyUsers(message);
         SetNotified(currentState);
@@ -114,7 +114,7 @@ internal class Tasks(ITelegramBotClient botClient)
         if (currentSlot?.Status == Status.PowerOn && currentSlot.End < in5minutes && !IsNotified(currentSlot))
         {
             Logger.Log("Next blackout is in 5 minutes");
-            await NotifyUsers("🪫 Next blackout is in 5 minutes");
+            await NotifyUsers(Terms.NextBlackoutMessage);
             SetNotified(currentSlot);
         }
     }

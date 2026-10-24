@@ -303,8 +303,8 @@ public class YasnoBot
 
         foreach (var slot in schedule.Slots)
         {
-            var arrow = today && now.IsBetween(slot.Start, slot.End) ? "👈" : "";
-            var status = slot.Status == Status.PowerOn ? "🔋" : "🪫";
+            var arrow = today && now.IsBetween(slot.Start, slot.End) ? Icons.Arrow : string.Empty;
+            var status = slot.Status == Status.PowerOn ? Icons.BatteryFull : Icons.BatteryEmpty;
             message += $"{slot.Start:HH:mm} - {slot.End:HH:mm} {status} {arrow}\n";
         }
         return message;
