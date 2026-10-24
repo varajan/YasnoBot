@@ -2,20 +2,20 @@
 
 public class Terms
 {
-    public const string TurnNotificationsOff = "🔕 Turn off notifications";
-    public const string TurnNotificationsOn = "🔔 Turn on notifications";
-    public const string CurrentStatus = "📊 Current status";
-    public const string Today = "📅 Today";
-    public const string Tomorrow = "📅 Tomorrow";
+    public const string TurnNotificationsOff = "🔕 Вимкнути сповіщення";
+    public const string TurnNotificationsOn = "🔔 Увімкнути сповіщення";
+    public const string CurrentStatus = "📊 Поточний статус";
+    public const string Today = "📅 Сьогодні";
+    public const string Tomorrow = "📅 Завтра";
 
-    public const string Schedule = "Schedule";
-    public const string NoScheduleAvailable = "No schedule available";
-    public const string NoDataAvailable = "No data available";
-    public const string EmergencyBlackout = "⚠ Emergency blackouts";
+    public const string Schedule = "Розклад";
+    public const string NoScheduleAvailable = "Розклад відсутній";
+    public const string NoDataAvailable = "Немає даних";
+    public const string EmergencyBlackout = "⚠ Аварійні відключення";
 
-    public const string ThereIsElectricity = "\U0001faab There is no electricity for {0}";
-    public const string ThereIsNoElectricity = "🔋 There is electricity for {0}";
+    public const string ThereIsElectricity = "🔋 Світло є вже {0}";
+    public const string ThereIsNoElectricity = "🪫 Світла немає вже {0}";
 
-    public const string NotificationsOn = "Notifications are ON";
-    public const string NotificationsOff = "Notifications are OFF";
+    public const string NotificationsOn = "Сповіщення увімкнено";
+    public const string NotificationsOff = "Сповіщення вимкнено";
 }
