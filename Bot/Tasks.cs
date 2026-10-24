@@ -61,52 +61,62 @@ internal class Tasks(ITelegramBotClient botClient)
 
     public async Task UpdateIcon()
     {
-        var schedule = ScheduleService.GetCurrent();
-        var currentStatus = HistoryService.GetLastRecord();
+        var currentState = HistoryService.GetLastRecord();
+        if (currentState?.Status == Status.Blackout)
+        {
+            await UpdateIcon(iconOff);
+            return;
+        }
 
-        if (currentStatus is not null && currentStatus.Status && schedule.Today.IsEmergence)
+        var schedule = ScheduleService.GetCurrent();
+        if (schedule?.Today.IsEmergence == true)
         {
             await UpdateIcon(iconOnOff);
             return;
         }
 
-        if (currentStatus is null || !currentStatus.Status || currentStatus.DateTime.AddMinutes(15) < DateTime.Now) return;
+        var now = new TimeOnly(DateTime.Now.Hour, DateTime.Now.Minute);
+        var in5minutes = now.AddMinutes(5);
+        var currentSlot = schedule is null ? default : schedule.Today.Slots.Last(s => s.Start < now);
+        if (currentSlot?.Status == Status.PowerOn && currentSlot.End < in5minutes)
+        {
+            await UpdateIcon(iconOnOff);
+            return;
+        }
+
         await UpdateIcon(iconOn);
     }
 
-    public async Task StatusChangedNotification()
+    public static async Task StatusChangedNotification()
     {
-        var lastRecord = HistoryService.GetLastRecord();
-        var prevRecord = HistoryService.GetPreviousRecord();
+        var currentState = HistoryService.GetLastRecord();
+        var previousState = HistoryService.GetLastRecord();
+        if (currentState is null || previousState is null || IsNotified(currentState)) return;
 
-        if (lastRecord is null || prevRecord is null || IsNotified(lastRecord)) return;
-
-        var icon = prevRecord.Status ? "🪫" : "🔋";
-        var message = $"{icon} There was {(prevRecord.Status ? "" : "NO ")}electricity for {prevRecord.DateTime.GetTimeDifference(lastRecord.DateTime)}";
+        var icon = currentState.Status == Status.PowerOn ? "🔋" : "🪫";
+        var message = $"{icon} There was {(previousState.Status == Status.PowerOn ? "" : "NO ")}electricity for {previousState.DateTime.GetTimeDifference(currentState.DateTime)}";
 
         await NotifyUsers(message);
-        await UpdateIcon(lastRecord.Status ? iconOn : iconOff);
-
-        SetNotified(lastRecord);
+        SetNotified(currentState);
     }
 
-    public async Task UpcomingBlackoutNotification()
+    public static async Task UpcomingBlackoutNotification()
     {
-        var lastRecord = HistoryService.GetLastRecord();
-        if (lastRecord is null || !lastRecord.Status) return;
+        var currentState = HistoryService.GetLastRecord();
+        if (currentState?.Status == Status.Blackout) return;
 
         var schedule = ScheduleService.GetCurrent();
         if (schedule is null || schedule.Today.Slots.Length == 0) return;
 
         var now = new TimeOnly(DateTime.Now.Hour, DateTime.Now.Minute);
-        var currentSlot = schedule.Today.Slots.Last(s => s.Start < now);
-
-        if (IsNotified(currentSlot) || !currentSlot.IsEnabled || currentSlot.End > now.AddMinutes(5)) return;
-
-        Logger.Log("Next blackout is in 5 minutes");
-        await NotifyUsers("🪫 Next blackout is in 5 minutes");
-        await UpdateIcon(iconOnOff);
-        SetNotified(currentSlot);
+        var in5minutes = now.AddMinutes(5);
+        var currentSlot = schedule is null ? default : schedule.Today.Slots.Last(s => s.Start < now);
+        if (currentSlot?.Status == Status.PowerOn && currentSlot.End < in5minutes && !IsNotified(currentSlot))
+        {
+            Logger.Log("Next blackout is in 5 minutes");
+            await NotifyUsers("🪫 Next blackout is in 5 minutes");
+            SetNotified(currentSlot);
+        }
     }
 
     private static async Task NotifyUsers(string message)

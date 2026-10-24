@@ -46,9 +46,9 @@ public class YasnoService(IApi api, IDataBase database, ILogger logger) : ISched
         TimeOnly end = slot.End == 1440
             ? new TimeOnly(23, 59, 59, 999)
             : new TimeOnly(slot.End / 60, slot.End % 60);
-        bool isEnabled = slot.Type == "NotPlanned";
+        var status = slot.Type == "NotPlanned" ? Status.PowerOn : Status.Blackout;
 
-        return new ScheduleSlotDto { Start = start, End = end, IsEnabled = isEnabled };
+        return new ScheduleSlotDto { Start = start, End = end, Status = status };
     }
 
     private async Task<(int cityId, int dsosId)> GetRegionData(string city, string dsos)

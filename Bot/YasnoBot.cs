@@ -45,9 +45,9 @@ public class YasnoBot
         );
 
         await Tasks.OnStartUp();
-        _ = Task.Run(async () => await Tasks.DoEveryMinute(() => tasks.StatusChangedNotification(), 0));
+        _ = Task.Run(async () => await Tasks.DoEveryMinute(() => Tasks.StatusChangedNotification(), 0));
         _ = Task.Run(async () => await Tasks.DoEveryMinute(() => Tasks.NewScheduleNotification(), 5));
-        _ = Task.Run(async () => await Tasks.DoEveryMinute(() => tasks.UpcomingBlackoutNotification(), 10));
+        _ = Task.Run(async () => await Tasks.DoEveryMinute(() => Tasks.UpcomingBlackoutNotification(), 10));
         _ = Task.Run(async () => await Tasks.DoEveryMinute(() => tasks.UpdateIcon(), 15));
 
         Console.WriteLine("Starting Bot.");
@@ -150,11 +150,11 @@ public class YasnoBot
                     case "blackout":
                         // write light - now-5
                         var dateTime = DateTime.Now.AddMinutes(-5).ToString("yyyy-MM-dd HH:mm:ss");
-                        DataBase.Execute($"INSERT INTO History (DateTime, Active) VALUES ('{dateTime}', {true})");
+                        DataBase.Execute($"INSERT INTO History (DateTime, Status) VALUES ('{dateTime}', {Status.PowerOn})");
 
                         // write blackout - now
                         dateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                        DataBase.Execute($"INSERT INTO History (DateTime, Active) VALUES ('{dateTime}', {false})");
+                        DataBase.Execute($"INSERT INTO History (DateTime, Status) VALUES ('{dateTime}', {Status.Blackout})");
                         break;
 
                     case "soon":
@@ -167,33 +167,33 @@ public class YasnoBot
                             {
                                 Slots =
                                 [
-                                    new ScheduleSlotDto{ Start = new TimeOnly(0, 0), End = new TimeOnly(nextBlackout.Hour, nextBlackout.Minute), IsEnabled = true },
-                                    new ScheduleSlotDto{ Start = new TimeOnly(nextBlackout.Hour, nextBlackout.Minute), End = new TimeOnly(23, 59), IsEnabled = false },
+                                    new ScheduleSlotDto{ Start = new TimeOnly(0, 0), End = new TimeOnly(nextBlackout.Hour, nextBlackout.Minute), Status = Status.PowerOn },
+                                    new ScheduleSlotDto{ Start = new TimeOnly(nextBlackout.Hour, nextBlackout.Minute), End = new TimeOnly(23, 59), Status = Status.Blackout },
                                 ]
                             },
                             Tomorrow = new()
                             {
                                 Slots =
                                 [
-                                    new ScheduleSlotDto{ Start = new TimeOnly(0, 0), End = new TimeOnly(nextBlackout.Hour, nextBlackout.Minute), IsEnabled = false },
-                                    new ScheduleSlotDto{ Start = new TimeOnly(nextBlackout.Hour, nextBlackout.Minute), End = new TimeOnly(23, 59), IsEnabled = true },
+                                    new ScheduleSlotDto{ Start = new TimeOnly(0, 0), End = new TimeOnly(nextBlackout.Hour, nextBlackout.Minute), Status = Status.PowerOn },
+                                    new ScheduleSlotDto{ Start = new TimeOnly(nextBlackout.Hour, nextBlackout.Minute), End = new TimeOnly(23, 59), Status = Status.Blackout },
                                 ]
                             }
                         };
                         DataBase.Execute($"INSERT OR REPLACE INTO Data (Key, Value) VALUES ('Schedule', '{newSchedule.Serialize()}')");
 
                         dateTime = DateTime.Now.AddMinutes(-1).ToString("yyyy-MM-dd HH:mm:ss");
-                        DataBase.Execute($"INSERT INTO History (DateTime, Active) VALUES ('{dateTime}', {true})");
+                        DataBase.Execute($"INSERT INTO History (DateTime, Status) VALUES ('{dateTime}', {Status.PowerOn})");
                         break;
 
                     case "light":
                         // write blackout - now-5
                         dateTime = DateTime.Now.AddMinutes(-5).ToString("yyyy-MM-dd HH:mm:ss");
-                        DataBase.Execute($"INSERT INTO History (DateTime, Active) VALUES ('{dateTime}', {false})");
+                        DataBase.Execute($"INSERT INTO History (DateTime, Status) VALUES ('{dateTime}', {Status.Blackout})");
 
                         // write light - now
                         dateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                        DataBase.Execute($"INSERT INTO History (DateTime, Active) VALUES ('{dateTime}', {true})");
+                        DataBase.Execute($"INSERT INTO History (DateTime, Status) VALUES ('{dateTime}', {Status.PowerOn})");
                         break;
 
                     case "schedule":
@@ -204,16 +204,16 @@ public class YasnoBot
                             {
                                 Slots =
                                 [
-                                    new ScheduleSlotDto{ Start = new TimeOnly(0, 0), End = new TimeOnly(now.Hour, now.Minute), IsEnabled = true },
-                                    new ScheduleSlotDto{ Start = new TimeOnly(now.Hour, now.Minute), End = new TimeOnly(23, 59), IsEnabled = false },
+                                    new ScheduleSlotDto{ Start = new TimeOnly(0, 0), End = new TimeOnly(now.Hour, now.Minute), Status = Status.PowerOn },
+                                    new ScheduleSlotDto{ Start = new TimeOnly(now.Hour, now.Minute), End = new TimeOnly(23, 59), Status = Status.Blackout },
                                 ]
                             },
                             Tomorrow = new()
                             {
                                 Slots =
                                 [
-                                    new ScheduleSlotDto{ Start = new TimeOnly(0, 0), End = new TimeOnly(now.Hour, now.Minute), IsEnabled = false },
-                                    new ScheduleSlotDto{ Start = new TimeOnly(now.Hour, now.Minute), End = new TimeOnly(23, 59), IsEnabled = true },
+                                    new ScheduleSlotDto{ Start = new TimeOnly(0, 0), End = new TimeOnly(now.Hour, now.Minute), Status = Status.PowerOn },
+                                    new ScheduleSlotDto{ Start = new TimeOnly(now.Hour, now.Minute), End = new TimeOnly(23, 59), Status = Status.Blackout },
                                 ]
                             }
                         };
@@ -261,7 +261,7 @@ public class YasnoBot
                 }
                 else
                 {
-                    bool isOnline = lastRecord.Status;
+                    bool isOnline = lastRecord.Status == Status.PowerOn;
                     string icon = isOnline ? "🔋" : "🪫";
                     string statusText = isOnline ? string.Empty : "NO ";
 
@@ -314,7 +314,7 @@ public class YasnoBot
         foreach (var slot in schedule.Slots)
         {
             var arrow = today && now.IsBetween(slot.Start, slot.End) ? "👈" : "";
-            var status = slot.IsEnabled ? "🔋" : "🪫";
+            var status = slot.Status == Status.PowerOn ? "🔋" : "🪫";
             message += $"{slot.Start:HH:mm} - {slot.End:HH:mm}: {status} {arrow}\n";
         }
         return message;

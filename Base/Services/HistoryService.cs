@@ -23,24 +23,16 @@ public class HistoryService(IDataBase dataBase) : IHistoryService
         return GetRecord(lastRecord);
     }
 
-    public void AddRecord(bool status)
+    public void AddRecord(Status status)
     {
         var dateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-        var active = status ? 1 : 0;
-        dataBase.Execute($"INSERT INTO History (DateTime, Active) VALUES ('{dateTime}', {active})");
-    }
-
-    public void Update(StatisticsDto record)
-    {
-        var dateTime = record.DateTime.ToString("yyyy-MM-dd HH:mm:ss");
-        var active = record.Status ? 1 : 0;
-        dataBase.Execute($"UPDATE History SET Active = {active} WHERE DateTime = '{dateTime}'");
+        dataBase.Execute($"INSERT INTO History (DateTime, Status) VALUES ('{dateTime}', {status})");
     }
 
     private static StatisticsDto GetRecord(Dictionary<string, string> record) =>
         new()
         {
             DateTime = record["DateTime"].ToDateTime(),
-            Status = record["Active"].ToInt() > 0,
+            Status = (Status)record["Status"].ToInt(),
         };
 }

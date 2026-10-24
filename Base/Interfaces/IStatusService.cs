@@ -1,6 +1,8 @@
-﻿namespace Base.Interfaces;
+﻿using Base.DTOs;
+
+namespace Base.Interfaces;
 
 public interface IStatusService
 {
-    bool IsRunning();
+    Status GetCurrentStatus();
 }

@@ -1,7 +1,10 @@
 ﻿using Base;
+using Base.DTOs;
 using Base.Extensions;
 using Base.Interfaces;
 using YasnoLogger.Interfaces;
+
+namespace Service;
 
 public class Service
 {
@@ -31,8 +34,8 @@ public class Service
                 }
             }
 
-            var currentStatus = statusService.IsRunning();
-            var lastStatus = historyService.GetLastRecord()?.Status ?? !currentStatus;
+            var currentStatus = statusService.GetCurrentStatus();
+            var lastStatus = historyService.GetLastRecord()?.Status ?? Status.Blackout;
 
             if (lastStatus != currentStatus)
             {

@@ -6,6 +6,5 @@ public interface IHistoryService
 {
     StatisticsDto? GetLastRecord();
     StatisticsDto? GetPreviousRecord();
-    void AddRecord(bool status);
-    void Update(StatisticsDto record);
+    void AddRecord(Status status);
 }

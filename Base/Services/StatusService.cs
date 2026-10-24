@@ -1,4 +1,5 @@
-﻿using Base.Interfaces;
+﻿using Base.DTOs;
+using Base.Interfaces;
 using System.Net.NetworkInformation;
 using YasnoLogger.Interfaces;
 
@@ -6,7 +7,7 @@ namespace Base.Services;
 
 public class StatusService(ILogger logger) : IStatusService
 {
-    public bool IsRunning()
+    public Status GetCurrentStatus()
     {
         var settings = ServicesProvider.Get<ISettings>();
         var areHostsUp = false;
@@ -20,7 +21,7 @@ public class StatusService(ILogger logger) : IStatusService
             Thread.Sleep(i * 2_000);
         }
 
-        return areHostsUp;
+        return areHostsUp ? Status.PowerOn : Status.Blackout;
     }
 
     private bool IsHostUp(string ip)

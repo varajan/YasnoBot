@@ -1,4 +1,5 @@
 ﻿using Microsoft.Data.Sqlite;
+using MoreLinq;
 using YasnoBot.YasnoLogger.Extensions;
 using YasnoLogger.Interfaces;
 
@@ -16,15 +17,26 @@ public class SQLiteDataBase(ILogger logger) : IDataBase
         {
             if (_connection == null || !IsReady)
             {
-                var initTablesCommand = @"
-                CREATE TABLE IF NOT EXISTS Users (ID Number PRIMARY KEY, Notify Number);
-                CREATE TABLE IF NOT EXISTS History (DateTime TEXT PRIMARY KEY, Active Number Number);
-                CREATE TABLE IF NOT EXISTS Data (Key TEXT PRIMARY KEY, Value TEXT);
-                CREATE TABLE IF NOT EXISTS Settings (Key TEXT PRIMARY KEY, Value TEXT); ";
-
                 _connection = new SqliteConnection(ConnectionString);
                 _connection.Open();
-                Execute(initTablesCommand, _connection);
+
+                var newVersion = 1;
+                var currentVersion = GetValue("PRAGMA user_version;").ToInt();
+                if (currentVersion != newVersion)
+                {
+                    var tableNames = GetColumn("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'");
+                    var dropTablesCommands = tableNames.Select(x => $"DROP TABLE {x};");
+                    var createTablesCommand = @$"
+                        CREATE TABLE Users (ID Number PRIMARY KEY, Notify INTEGER);
+                        CREATE TABLE History (DateTime TEXT PRIMARY KEY, Status INTEGER);
+                        CREATE TABLE Data (Key TEXT PRIMARY KEY, Value TEXT);
+                        CREATE TABLE Settings (Key TEXT PRIMARY KEY, Value TEXT); 
+
+                        PRAGMA user_version = {newVersion};";
+
+                    dropTablesCommands.ForEach(Execute);
+                    Execute(createTablesCommand, _connection);
+                }
             }
 
             return _connection;
