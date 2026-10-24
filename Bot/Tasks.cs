@@ -137,7 +137,7 @@ internal class Tasks(ITelegramBotClient botClient)
     private async Task UpdateIcon(string filePath)
     {
         if (filePath == GetCurrentIcon()) return;
-        if (DateTime.Now.AddMinutes(-5) > GetIconUpdateTime()) return;
+        if (DateTime.Now.AddMinutes(-5) < GetIconUpdateTime()) return;
 
         await using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
         var inputPhoto = new InputProfilePhotoStatic { Photo = fileStream };
