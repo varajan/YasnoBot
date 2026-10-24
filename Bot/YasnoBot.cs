@@ -2,7 +2,6 @@
 using Base.DTOs;
 using Base.Extensions;
 using Base.Interfaces;
-using Bot;
 using System.Text.RegularExpressions;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
@@ -11,16 +10,10 @@ using Telegram.Bot.Types.Enums;
 using YasnoBot.YasnoLogger.Extensions;
 using YasnoLogger.Interfaces;
 
-namespace YasnoBot;
+namespace Bot;
 
 public class YasnoBot
 {
-    private static readonly string msgOff = "🔕 Turn off notifications";
-    private static readonly string msgOn = "🔔 Turn on notifications";
-    private static readonly string msgStatus = "📊 Current status";
-    private static readonly string today = "📅 Today";
-    private static readonly string tomorrow = "📅 Tomorrow";
-
     private static ILogger Logger => ServicesProvider.Get<ILogger>();
     private static IUserRepository UserRepository => ServicesProvider.Get<IUserRepository>();
     private static INotifyService NotifyService => ServicesProvider.Get<INotifyService>();
@@ -235,61 +228,58 @@ public class YasnoBot
 
             // TEST commands
 
-            if (user.Notify && message.Text == msgOff)
+            if (user.Notify && message.Text == Terms.TurnNotificationsOff)
             {
                 user.Notify = false;
                 UserRepository.Save(user);
             }
 
-            if (!user.Notify && message.Text == msgOn)
+            if (!user.Notify && message.Text == Terms.TurnNotificationsOn)
             {
                 user.Notify = true;
                 UserRepository.Save(user);
             }
 
-            var replyMessage = user.Notify ? "Notifications are ON" : "Notifications are OFF";
-            var btnText = user.Notify ? msgOff : msgOn;
+            var replyMessage = user.Notify ? Terms.NotificationsOn : Terms.NotificationsOff;
+            var btnText = user.Notify ? Terms.TurnNotificationsOff : Terms.TurnNotificationsOn;
 
-            if (message.Text == msgStatus)
+            if (message.Text == Terms.CurrentStatus)
             {
                 var historyService = ServicesProvider.Get<IHistoryService>();
                 var lastRecord = historyService.GetLastRecord();
 
                 if (lastRecord is null)
                 {
-                    replyMessage = "No data available";
+                    replyMessage = Terms.NoDataAvailable;
                 }
                 else
                 {
-                    bool isOnline = lastRecord.Status == Status.PowerOn;
-                    string icon = isOnline ? "🔋" : "🪫";
-                    string statusText = isOnline ? string.Empty : "NO ";
-
-                    replyMessage = $"{icon} There is {statusText}electricity for {lastRecord.DateTime.GetTimeDifference()}";
+                    var messageTemplate = lastRecord.Status == Status.PowerOn ? Terms.ThereIsElectricity : Terms.ThereIsNoElectricity;
+                    replyMessage = string.Format(messageTemplate, lastRecord.DateTime.GetTimeDifference());
                 }
             }
 
-            if (message.Text == today || message.Text == tomorrow)
+            if (message.Text == Terms.Today || message.Text == Terms.Tomorrow)
             {
                 var scheduleService = ServicesProvider.Get<IScheduleService>();
                 var fullSchedule = scheduleService.GetCurrent();
 
                 if (fullSchedule is null)
                 {
-                    replyMessage = "No data available";
+                    replyMessage = Terms.NoDataAvailable;
                 }
                 else
                 {
-                    var schedule = message.Text == today ? fullSchedule.Today : fullSchedule.Tomorrow;
-                    replyMessage = GetScheduleMessage(schedule, message.Text == today);
+                    var schedule = message.Text == Terms.Today ? fullSchedule.Today : fullSchedule.Tomorrow;
+                    replyMessage = GetScheduleMessage(schedule, message.Text == Terms.Today);
                 }
             }
 
             var buttons = new List<List<string>>
             {
                 new() { btnText },
-                new() { msgStatus },
-                new() { today, tomorrow },
+                new() { Terms.CurrentStatus },
+                new() { Terms.Today, Terms.Tomorrow },
             };
             await NotifyService.NotifyWithButtons(message.Chat.Id, replyMessage, buttons);
         }
@@ -304,18 +294,18 @@ public class YasnoBot
     {
         if (schedule is null || schedule.Slots is null || !schedule.Slots.Any())
         {
-            return "No schedule available";
+            return Terms.NoScheduleAvailable;
         }
 
         var now = new TimeOnly(DateTime.Now.Hour, DateTime.Now.Minute);
-        var message = "Schedule:\n";
-        if (schedule.IsEmergence) message += "⚠ Emergency blackouts";
+        var message = $"{Terms.Schedule}:\n";
+        if (schedule.IsEmergence) message += Terms.EmergencyBlackout;
 
         foreach (var slot in schedule.Slots)
         {
             var arrow = today && now.IsBetween(slot.Start, slot.End) ? "👈" : "";
             var status = slot.Status == Status.PowerOn ? "🔋" : "🪫";
-            message += $"{slot.Start:HH:mm} - {slot.End:HH:mm}: {status} {arrow}\n";
+            message += $"{slot.Start:HH:mm} - {slot.End:HH:mm} {status} {arrow}\n";
         }
         return message;
     }
