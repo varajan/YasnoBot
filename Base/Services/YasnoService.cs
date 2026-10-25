@@ -1,4 +1,5 @@
-﻿using Base.DTOs;
+﻿using Base.DTOs.Schedule;
+using Base.DTOs.Yasno;
 using Base.Extensions;
 using Base.Interfaces;
 using YasnoLogger.Interfaces;
@@ -33,12 +34,23 @@ public class YasnoService(IApi api, IDataBase database) : IScheduleService
 
         return new TwoDayScheduleDto
         {
-            Today = new ScheduleDto { Slots = today, IsEmergence = schedule.Today.Status == "EmergencyShutdowns" },
-            Tomorrow = new ScheduleDto { Slots = tomorrow, IsEmergence = schedule.Tomorrow.Status == "EmergencyShutdowns" },
+            Today = new ScheduleDto
+            {
+                Slots = today,
+                Date = schedule.Today.Date,
+                IsEmergence = schedule.Today.Status == "EmergencyShutdowns"
+            },
+
+            Tomorrow = new ScheduleDto
+            {
+                Slots = tomorrow,
+                Date = schedule.Tomorrow.Date,
+                IsEmergence = schedule.Tomorrow.Status == "EmergencyShutdowns"
+            },
         };
     }
 
-    private ScheduleSlotDto GetSlot(SlotDto slot)
+    private DTOs.Schedule.SlotDto GetSlot(DTOs.Yasno.SlotDto slot)
     {
         TimeOnly start = new(slot.Start / 60, slot.Start % 60);
         TimeOnly end = slot.End == 1440
@@ -46,7 +58,7 @@ public class YasnoService(IApi api, IDataBase database) : IScheduleService
             : new TimeOnly(slot.End / 60, slot.End % 60);
         var status = slot.Type == "NotPlanned" ? Status.PowerOn : Status.Blackout;
 
-        return new ScheduleSlotDto { Start = start, End = end, Status = status };
+        return new DTOs.Schedule.SlotDto { Start = start, End = end, Status = status };
     }
 
     private async Task<(int cityId, int dsosId)> GetRegionData(string city, string dsos)

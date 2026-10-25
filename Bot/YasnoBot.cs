@@ -1,5 +1,6 @@
 ﻿using Base;
 using Base.DTOs;
+using Base.DTOs.Schedule;
 using Base.Extensions;
 using Base.Interfaces;
 using System.Text.RegularExpressions;
@@ -17,7 +18,11 @@ public class YasnoBot
     private static ILogger Logger => ServicesProvider.Get<ILogger>();
     private static IUserRepository UserRepository => ServicesProvider.Get<IUserRepository>();
     private static INotifyService NotifyService => ServicesProvider.Get<INotifyService>();
-    private static IDataBase DataBase => ServicesProvider.Get<IDataBase>();
+    private static IScheduleService ScheduleService => ServicesProvider.Get<IScheduleService>();
+    private static IHistoryService HistoryService => ServicesProvider.Get<IHistoryService>();
+    private static IBotStateService DataService => ServicesProvider.Get<IBotStateService>();
+    private static ISettings Settings => ServicesProvider.Get<ISettings>();
+    private static IStatusService StatusService => ServicesProvider.Get<IStatusService>();
 
     private static async Task Main()
     {
@@ -25,10 +30,11 @@ public class YasnoBot
         using var cts = new CancellationTokenSource();
         var receiverOptions = new ReceiverOptions { AllowedUpdates = [] };
         var notifyService = new TelegramBotNotifyService(botClient);
-        var tasks = new Tasks(botClient);
 
         ServicesProvider.AddApplicationServices();
         ServicesProvider.Add<INotifyService>(notifyService);
+
+        var scheduledTasks = new ScheduledTasks(botClient, Logger, notifyService, ScheduleService, UserRepository, StatusService, HistoryService, DataService);
 
         botClient.StartReceiving(
             updateHandler: HandleUpdateAsync,
@@ -37,11 +43,13 @@ public class YasnoBot
             cancellationToken: cts.Token
         );
 
-        await Tasks.OnStartUp();
-        _ = Task.Run(async () => await Tasks.DoEveryMinute(() => Tasks.StatusChangedNotification(), 0));
-        _ = Task.Run(async () => await Tasks.DoEveryMinute(() => Tasks.NewScheduleNotification(), 5));
-        _ = Task.Run(async () => await Tasks.DoEveryMinute(() => Tasks.UpcomingBlackoutNotification(), 10));
-        _ = Task.Run(async () => await Tasks.DoEveryMinute(() => tasks.UpdateIcon(), 15));
+        _ = Task.Run(async () => await scheduledTasks.DoOnce(() => scheduledTasks.SendNewVersionNotification()));
+        _ = Task.Run(async () => await scheduledTasks.DoEveryMinute(() => scheduledTasks.GetCurrentStatus(), 0));
+        _ = Task.Run(async () => await scheduledTasks.DoEveryMinute(() => scheduledTasks.StatusChangedNotification(), 5));
+        _ = Task.Run(async () => await scheduledTasks.DoEveryMinute(() => scheduledTasks.NewScheduleNotification(), 10));
+        _ = Task.Run(async () => await scheduledTasks.DoEveryMinute(() => scheduledTasks.UpcomingBlackoutNotification(), 15));
+        _ = Task.Run(async () => await scheduledTasks.DoEveryMinute(() => scheduledTasks.UpdateIcon(), 20));
+        _ = Task.Run(async () => await scheduledTasks.DoEvery10Minutes(() => scheduledTasks.UpdateSchedule()));
 
         Console.WriteLine("Starting Bot.");
         await Task.Delay(Timeout.Infinite, cts.Token);
@@ -99,185 +107,71 @@ public class YasnoBot
             }
 
             // Admin commands
-            var settings = ServicesProvider.Get<ISettings>();
-
-            if (message.Text == "/settings")
+            if (message.Text.StartsWith("/set/"))
             {
-                var allSettings = settings.Keys.Select(key => $"{key}: {settings.Get(key)}");
-                var settingsMessage = string.Join("\n", allSettings) + "\n\n/settings/<KEY>: <VALUE>";
-
-                await NotifyService.Notify(message.Chat.Id, settingsMessage);
-                return;
-            }
-
-            if (message.Text.StartsWith("/settings/"))
-            {
-                var key = message.Text.SubString("/settings/", ":").Trim();
+                var key = message.Text.SubString("/set/", ":").Trim();
                 var value = message.Text.SubString(":").Trim();
 
-                settings.Set(key, value);
+                Settings.Set(key, value);
                 await NotifyService.Notify(message.Chat.Id, $"Setting updated: {key} = {value}");
                 return;
             }
-
-            if (message.Text == "/logs")
-            {
-                await NotifyService.Notify(message.Chat.Id, Logger.TopLogs);
-            }
             // Admin commands
 
-            // TEST commands
+            var replyMessage = string.Empty;
+            var turnNotificationBtn = user.Notify ? Terms.TurnNotificationsOff : Terms.TurnNotificationsOn;
 
-            if (message.Text == "/test")
+            switch (message.Text)
             {
-                await NotifyService.Notify(message.Chat.Id, "blackout, soon, light, schedule, emergency");
-                return;
-            }
+                case "/settings":
+                    var allSettings = Settings.Keys.Select(key => $"{key}: {Settings.Get(key)}");
+                    var settingsMessage = string.Join("\n", allSettings) + "\n\n/set/<KEY>: <VALUE>";
+                    await NotifyService.Notify(message.Chat.Id, settingsMessage);
+                    return;
 
-            if (message.Text.Contains("/test"))
-            {
-                var task = message.Text.Split('/').Last().Trim();
+                case "/logs":
+                    await NotifyService.Notify(message.Chat.Id, Logger.TopLogs);
+                    return;
 
-                switch (task)
-                {
-                    case "blackout":
-                        // write light - now-5
-                        var dateTime = DateTime.Now.AddMinutes(-5).ToString("yyyy-MM-dd HH:mm:ss");
-                        DataBase.Execute($"INSERT INTO History (DateTime, Status) VALUES ('{dateTime}', {(int)Status.PowerOn})");
+                case Terms.TurnNotificationsOn:
+                case Terms.TurnNotificationsOff:
+                    user.Notify = message.Text == Terms.TurnNotificationsOn;
+                    UserRepository.Save(user);
+                    replyMessage = user.Notify ? Terms.NotificationsOn : Terms.NotificationsOff;
+                    turnNotificationBtn = user.Notify ? Terms.TurnNotificationsOff : Terms.TurnNotificationsOn;
+                    break;
 
-                        // write blackout - now
-                        dateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                        DataBase.Execute($"INSERT INTO History (DateTime, Status) VALUES ('{dateTime}', {(int)Status.Blackout})");
-                        break;
+                case Terms.CurrentStatus:
+                    var lastRecord = HistoryService.GetLastRecord();
+                    if (lastRecord is null)
+                    {
+                        replyMessage = Terms.NoDataAvailable;
+                    }
+                    else
+                    {
+                        var messageTemplate = lastRecord.Status == Status.PowerOn ? Terms.ThereIsElectricity : Terms.ThereIsNoElectricity;
+                        replyMessage = string.Format(messageTemplate, lastRecord.DateTime.GetTimeDifference());
+                    }
+                    break;
 
-                    case "soon":
-                        // schedule, where next shutdown is in 5 min
-                        var nextBlackout = DateTime.Now.AddMinutes(5);
-
-                        var newSchedule = new TwoDayScheduleDto
-                        {
-                            Today = new()
-                            {
-                                Slots =
-                                [
-                                    new ScheduleSlotDto{ Start = new TimeOnly(0, 0), End = new TimeOnly(nextBlackout.Hour, nextBlackout.Minute), Status = Status.PowerOn },
-                                    new ScheduleSlotDto{ Start = new TimeOnly(nextBlackout.Hour, nextBlackout.Minute), End = new TimeOnly(23, 59), Status = Status.Blackout },
-                                ]
-                            },
-                            Tomorrow = new()
-                            {
-                                Slots =
-                                [
-                                    new ScheduleSlotDto{ Start = new TimeOnly(0, 0), End = new TimeOnly(nextBlackout.Hour, nextBlackout.Minute), Status = Status.PowerOn },
-                                    new ScheduleSlotDto{ Start = new TimeOnly(nextBlackout.Hour, nextBlackout.Minute), End = new TimeOnly(23, 59), Status = Status.Blackout },
-                                ]
-                            }
-                        };
-                        DataBase.Execute($"INSERT OR REPLACE INTO Data (Key, Value) VALUES ('Schedule', '{newSchedule.Serialize()}')");
-
-                        dateTime = DateTime.Now.AddMinutes(-1).ToString("yyyy-MM-dd HH:mm:ss");
-                        DataBase.Execute($"INSERT INTO History (DateTime, Status) VALUES ('{dateTime}', {(int)Status.PowerOn})");
-                        break;
-
-                    case "light":
-                        // write blackout - now-5
-                        dateTime = DateTime.Now.AddMinutes(-5).ToString("yyyy-MM-dd HH:mm:ss");
-                        DataBase.Execute($"INSERT INTO History (DateTime, Status) VALUES ('{dateTime}', {(int)Status.Blackout})");
-
-                        // write light - now
-                        dateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                        DataBase.Execute($"INSERT INTO History (DateTime, Status) VALUES ('{dateTime}', {(int)Status.PowerOn})");
-                        break;
-
-                    case "schedule":
-                        var now = DateTime.Now;
-                        newSchedule = new TwoDayScheduleDto
-                        {
-                            Today = new()
-                            {
-                                Slots =
-                                [
-                                    new ScheduleSlotDto{ Start = new TimeOnly(0, 0), End = new TimeOnly(now.Hour, now.Minute), Status = Status.PowerOn },
-                                    new ScheduleSlotDto{ Start = new TimeOnly(now.Hour, now.Minute), End = new TimeOnly(23, 59), Status = Status.Blackout },
-                                ]
-                            },
-                            Tomorrow = new()
-                            {
-                                Slots =
-                                [
-                                    new ScheduleSlotDto{ Start = new TimeOnly(0, 0), End = new TimeOnly(now.Hour, now.Minute), Status = Status.PowerOn },
-                                    new ScheduleSlotDto{ Start = new TimeOnly(now.Hour, now.Minute), End = new TimeOnly(23, 59), Status = Status.Blackout },
-                                ]
-                            }
-                        };
-                        DataBase.Execute($"INSERT OR REPLACE INTO Data (Key, Value) VALUES ('Schedule', '{newSchedule.Serialize()}')");
-                        break;
-
-                    case "emergency":
-                        newSchedule = new TwoDayScheduleDto
-                        {
-                            Today = new() { Slots = [], IsEmergence = true },
-                            Tomorrow = new() { Slots = [], IsEmergence = true }
-                        };
-                        DataBase.Execute($"INSERT OR REPLACE INTO Data (Key, Value) VALUES ('Schedule', '{newSchedule.Serialize()}')");
-                        break;
-                }
-
-                return;
-            }
-
-            // TEST commands
-
-            if (user.Notify && message.Text == Terms.TurnNotificationsOff)
-            {
-                user.Notify = false;
-                UserRepository.Save(user);
-            }
-
-            if (!user.Notify && message.Text == Terms.TurnNotificationsOn)
-            {
-                user.Notify = true;
-                UserRepository.Save(user);
-            }
-
-            var replyMessage = user.Notify ? Terms.NotificationsOn : Terms.NotificationsOff;
-            var btnText = user.Notify ? Terms.TurnNotificationsOff : Terms.TurnNotificationsOn;
-
-            if (message.Text == Terms.CurrentStatus)
-            {
-                var historyService = ServicesProvider.Get<IHistoryService>();
-                var lastRecord = historyService.GetLastRecord();
-
-                if (lastRecord is null)
-                {
-                    replyMessage = Terms.NoDataAvailable;
-                }
-                else
-                {
-                    var messageTemplate = lastRecord.Status == Status.PowerOn ? Terms.ThereIsElectricity : Terms.ThereIsNoElectricity;
-                    replyMessage = string.Format(messageTemplate, lastRecord.DateTime.GetTimeDifference());
-                }
-            }
-
-            if (message.Text == Terms.Today || message.Text == Terms.Tomorrow)
-            {
-                var scheduleService = ServicesProvider.Get<IScheduleService>();
-                var fullSchedule = scheduleService.GetCurrent();
-
-                if (fullSchedule is null)
-                {
-                    replyMessage = Terms.NoDataAvailable;
-                }
-                else
-                {
-                    var schedule = message.Text == Terms.Today ? fullSchedule.Today : fullSchedule.Tomorrow;
-                    replyMessage = GetScheduleMessage(schedule, message.Text == Terms.Today);
-                }
+                case Terms.Today:
+                case Terms.Tomorrow:
+                    var fullSchedule = ScheduleService.GetCurrent();
+                    if (fullSchedule is null)
+                    {
+                        replyMessage = Terms.NoDataAvailable;
+                    }
+                    else
+                    {
+                        var schedule = message.Text == Terms.Today ? fullSchedule.Today : fullSchedule.Tomorrow;
+                        replyMessage = GetScheduleMessage(schedule, message.Text == Terms.Today);
+                    }
+                    break;
             }
 
             var buttons = new List<List<string>>
             {
-                new() { btnText },
+                new() { turnNotificationBtn },
                 new() { Terms.CurrentStatus },
                 new() { Terms.Today, Terms.Tomorrow },
             };

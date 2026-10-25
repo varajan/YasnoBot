@@ -1,5 +1,5 @@
 ﻿using Base;
-using Base.DTOs;
+using Base.DTOs.Schedule;
 using Base.Extensions;
 using Base.Interfaces;
 using YasnoLogger.Interfaces;
@@ -31,6 +31,12 @@ public class Service
                 {
                     logger.Log("Updating schedule.");
                     scheduleService.SetCurrent(newSchedule);
+
+                    if (currentSchedule?.Tomorrow?.Date == newSchedule.Today?.Date)
+                    {
+                        var stateService = ServicesProvider.Get<IBotStateService>();
+                        stateService.MarkAsNotified(newSchedule);
+                    }
                 }
             }
 

@@ -4,8 +4,8 @@ namespace YasnoLogger.Loggers;
 
 public class FileLogger : ILogger
 {
-    private string LogDir => $"{AppDomain.CurrentDomain.BaseDirectory}/Logs";
-    private string LogFile => $"{LogDir}/{DateTime.Today:yyyy-MM-dd}.txt";
+    private static string LogDir => $"{AppDomain.CurrentDomain.BaseDirectory}/Logs";
+    private static string LogFile => $"{LogDir}/{DateTime.Today:yyyy-MM-dd}.txt";
 
     public string TopLogs
     {
@@ -15,8 +15,9 @@ public class FileLogger : ILogger
             {
                 if (!File.Exists(LogFile)) return string.Empty;
 
+                var logFileSize = $"Log file size: {new FileInfo(LogFile).Length} bytes";
                 var lastLines = File.ReadLines(LogFile).TakeLast(50).ToList();
-                return string.Join(Environment.NewLine, lastLines);
+                return string.Join(Environment.NewLine, lastLines, logFileSize);
             }
             catch { return string.Empty; }
         }

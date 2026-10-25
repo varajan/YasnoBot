@@ -1,4 +1,4 @@
-﻿using Base.DTOs;
+﻿using Base.DTOs.Schedule;
 
 namespace Base.Interfaces;
 

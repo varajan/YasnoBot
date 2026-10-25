@@ -1,4 +1,4 @@
-﻿namespace Base.DTOs;
+﻿namespace Base.DTOs.Schedule;
 
 public class StatisticsDto
 {
