@@ -5,7 +5,7 @@ using YasnoLogger.Interfaces;
 
 namespace Base.Services;
 
-public class YasnoService(IApi api, IDataBase database, ILogger logger) : IScheduleService
+public class YasnoService(IApi api, IDataBase database) : IScheduleService
 {
     private readonly string addressApiUrl = "https://app.yasno.ua/api/blackout-service/public/shutdowns/addresses/v2";
 
@@ -40,8 +40,6 @@ public class YasnoService(IApi api, IDataBase database, ILogger logger) : ISched
 
     private ScheduleSlotDto GetSlot(SlotDto slot)
     {
-        logger.Log($"Slot: Start={slot.Start}, End={slot.End}, Type={slot.Type}");
-
         TimeOnly start = new(slot.Start / 60, slot.Start % 60);
         TimeOnly end = slot.End == 1440
             ? new TimeOnly(23, 59, 59, 999)
