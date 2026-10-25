@@ -24,19 +24,30 @@ public class SQLiteDataBase(ILogger logger) : IDataBase
                 var currentVersion = GetValue("PRAGMA user_version;").ToInt();
                 if (currentVersion != newVersion)
                 {
-                    var tableNames = GetColumn("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'");
-                    var dropTablesCommands = tableNames.Select(x => $"DROP TABLE {x};");
                     var createTablesCommand = @$"
-                        CREATE TABLE Users (ID Number PRIMARY KEY, Notify INTEGER);
-                        CREATE TABLE History (DateTime TEXT PRIMARY KEY, Status INTEGER);
-                        CREATE TABLE Data (Key TEXT PRIMARY KEY, Value TEXT);
-                        CREATE TABLE Settings (Key TEXT PRIMARY KEY, Value TEXT); 
+                        CREATE TABLE IF NOT EXISTS Users (ID Number PRIMARY KEY, Notify INTEGER);
+                        CREATE TABLE IF NOT EXISTS History (DateTime TEXT PRIMARY KEY, Status INTEGER);
+                        CREATE TABLE IF NOT EXISTS Data (Key TEXT PRIMARY KEY, Value TEXT);
+                        CREATE TABLE IF NOT EXISTS Settings (Key TEXT PRIMARY KEY, Value TEXT);
 
                         PRAGMA user_version = {newVersion};";
 
-                    dropTablesCommands.ForEach(Execute);
+                    if (currentVersion < newVersion - 1) DropAll();
+                    if (currentVersion == newVersion - 1) Migrate();
                     Execute(createTablesCommand, _connection);
                 }
+            }
+
+            void DropAll()
+            {
+                var tableNames = GetColumn("SELECT name FROM sqlite_master WHERE type = 'table' AND name NOT LIKE 'sqlite_%'");
+                var dropTablesCommands = tableNames.Select(x => $"DROP TABLE {x};");
+                dropTablesCommands.ForEach(Execute);
+            }
+
+            void Migrate()
+            {
+                // Implement migration logic here if needed
             }
 
             return _connection;
