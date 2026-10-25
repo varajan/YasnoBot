@@ -1,5 +1,5 @@
 ﻿using YasnoLogger.Interfaces;
-using YasnoBot.Extensions;
+using YasnoBot.YasnoLogger.Extensions;
 
 namespace YasnoLogger.Loggers;
 
