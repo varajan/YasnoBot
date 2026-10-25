@@ -58,7 +58,7 @@ public class YasnoService(IApi api, IDataBase database) : IScheduleService
             : new TimeOnly(slot.End / 60, slot.End % 60);
         var status = slot.Type == "NotPlanned" ? Status.PowerOn : Status.Blackout;
 
-        return new DTOs.Bot.SlotDto { Start = start, End = end, Status = status };
+        return new DTOs.Schedule.SlotDto { Start = start, End = end, Status = status };
     }
 
     private async Task<(int cityId, int dsosId)> GetRegionData(string city, string dsos)
