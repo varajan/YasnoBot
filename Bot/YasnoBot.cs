@@ -17,7 +17,9 @@ public class YasnoBot
     private static ILogger Logger => ServicesProvider.Get<ILogger>();
     private static IUserRepository UserRepository => ServicesProvider.Get<IUserRepository>();
     private static INotifyService NotifyService => ServicesProvider.Get<INotifyService>();
-    private static IDataBase DataBase => ServicesProvider.Get<IDataBase>();
+    private static IScheduleService ScheduleService => ServicesProvider.Get<IScheduleService>();
+    private static IHistoryService HistoryService => ServicesProvider.Get<IHistoryService>();
+    private static IBotStateService DataService => ServicesProvider.Get<IBotStateService>();
 
     private static async Task Main()
     {
@@ -25,7 +27,7 @@ public class YasnoBot
         using var cts = new CancellationTokenSource();
         var receiverOptions = new ReceiverOptions { AllowedUpdates = [] };
         var notifyService = new TelegramBotNotifyService(botClient);
-        var tasks = new Tasks(botClient);
+        var scheduledTasks = new ScheduledTasks(botClient, Logger, notifyService, ScheduleService, UserRepository, HistoryService, DataService);
 
         ServicesProvider.AddApplicationServices();
         ServicesProvider.Add<INotifyService>(notifyService);
@@ -37,11 +39,11 @@ public class YasnoBot
             cancellationToken: cts.Token
         );
 
-        await Tasks.OnStartUp();
-        _ = Task.Run(async () => await Tasks.DoEveryMinute(() => tasks.StatusChangedNotification(), 0));
-        _ = Task.Run(async () => await Tasks.DoEveryMinute(() => tasks.NewScheduleNotification(), 5));
-        _ = Task.Run(async () => await Tasks.DoEveryMinute(() => tasks.UpcomingBlackoutNotification(), 10));
-        _ = Task.Run(async () => await Tasks.DoEveryMinute(() => tasks.UpdateIcon(), 15));
+        await scheduledTasks.OnStartUp();
+        _ = Task.Run(async () => await scheduledTasks.DoEveryMinute(() => scheduledTasks.StatusChangedNotification(), 0));
+        _ = Task.Run(async () => await scheduledTasks.DoEveryMinute(() => scheduledTasks.NewScheduleNotification(), 5));
+        _ = Task.Run(async () => await scheduledTasks.DoEveryMinute(() => scheduledTasks.UpcomingBlackoutNotification(), 10));
+        _ = Task.Run(async () => await scheduledTasks.DoEveryMinute(() => scheduledTasks.UpdateIcon(), 15));
 
         Console.WriteLine("Starting Bot.");
         await Task.Delay(Timeout.Infinite, cts.Token);
@@ -126,108 +128,6 @@ public class YasnoBot
             }
             // Admin commands
 
-            // TEST commands
-
-            if (message.Text == "/test")
-            {
-                await NotifyService.Notify(message.Chat.Id, "blackout, soon, light, schedule, emergency");
-                return;
-            }
-
-            if (message.Text.Contains("/test"))
-            {
-                var task = message.Text.Split('/').Last().Trim();
-
-                switch (task)
-                {
-                    case "blackout":
-                        // write light - now-5
-                        var dateTime = DateTime.Now.AddMinutes(-5).ToString("yyyy-MM-dd HH:mm:ss");
-                        DataBase.Execute($"INSERT INTO History (DateTime, Status) VALUES ('{dateTime}', {(int)Status.PowerOn})");
-
-                        // write blackout - now
-                        dateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                        DataBase.Execute($"INSERT INTO History (DateTime, Status) VALUES ('{dateTime}', {(int)Status.Blackout})");
-                        break;
-
-                    case "soon":
-                        // schedule, where next shutdown is in 5 min
-                        var nextBlackout = DateTime.Now.AddMinutes(5);
-
-                        var newSchedule = new TwoDayScheduleDto
-                        {
-                            Today = new()
-                            {
-                                Slots =
-                                [
-                                    new ScheduleSlotDto{ Start = new TimeOnly(0, 0), End = new TimeOnly(nextBlackout.Hour, nextBlackout.Minute), Status = Status.PowerOn },
-                                    new ScheduleSlotDto{ Start = new TimeOnly(nextBlackout.Hour, nextBlackout.Minute), End = new TimeOnly(23, 59), Status = Status.Blackout },
-                                ]
-                            },
-                            Tomorrow = new()
-                            {
-                                Slots =
-                                [
-                                    new ScheduleSlotDto{ Start = new TimeOnly(0, 0), End = new TimeOnly(nextBlackout.Hour, nextBlackout.Minute), Status = Status.PowerOn },
-                                    new ScheduleSlotDto{ Start = new TimeOnly(nextBlackout.Hour, nextBlackout.Minute), End = new TimeOnly(23, 59), Status = Status.Blackout },
-                                ]
-                            }
-                        };
-                        DataBase.Execute($"INSERT OR REPLACE INTO Data (Key, Value) VALUES ('Schedule', '{newSchedule.Serialize()}')");
-
-                        dateTime = DateTime.Now.AddMinutes(-1).ToString("yyyy-MM-dd HH:mm:ss");
-                        DataBase.Execute($"INSERT INTO History (DateTime, Status) VALUES ('{dateTime}', {(int)Status.PowerOn})");
-                        break;
-
-                    case "light":
-                        // write blackout - now-5
-                        dateTime = DateTime.Now.AddMinutes(-5).ToString("yyyy-MM-dd HH:mm:ss");
-                        DataBase.Execute($"INSERT INTO History (DateTime, Status) VALUES ('{dateTime}', {(int)Status.Blackout})");
-
-                        // write light - now
-                        dateTime = DateTime.Now.ToString("yyyy-MM-dd HH:mm:ss");
-                        DataBase.Execute($"INSERT INTO History (DateTime, Status) VALUES ('{dateTime}', {(int)Status.PowerOn})");
-                        break;
-
-                    case "schedule":
-                        var now = DateTime.Now;
-                        newSchedule = new TwoDayScheduleDto
-                        {
-                            Today = new()
-                            {
-                                Slots =
-                                [
-                                    new ScheduleSlotDto{ Start = new TimeOnly(0, 0), End = new TimeOnly(now.Hour, now.Minute), Status = Status.PowerOn },
-                                    new ScheduleSlotDto{ Start = new TimeOnly(now.Hour, now.Minute), End = new TimeOnly(23, 59), Status = Status.Blackout },
-                                ]
-                            },
-                            Tomorrow = new()
-                            {
-                                Slots =
-                                [
-                                    new ScheduleSlotDto{ Start = new TimeOnly(0, 0), End = new TimeOnly(now.Hour, now.Minute), Status = Status.PowerOn },
-                                    new ScheduleSlotDto{ Start = new TimeOnly(now.Hour, now.Minute), End = new TimeOnly(23, 59), Status = Status.Blackout },
-                                ]
-                            }
-                        };
-                        DataBase.Execute($"INSERT OR REPLACE INTO Data (Key, Value) VALUES ('Schedule', '{newSchedule.Serialize()}')");
-                        break;
-
-                    case "emergency":
-                        newSchedule = new TwoDayScheduleDto
-                        {
-                            Today = new() { Slots = [], IsEmergence = true },
-                            Tomorrow = new() { Slots = [], IsEmergence = true }
-                        };
-                        DataBase.Execute($"INSERT OR REPLACE INTO Data (Key, Value) VALUES ('Schedule', '{newSchedule.Serialize()}')");
-                        break;
-                }
-
-                return;
-            }
-
-            // TEST commands
-
             if (user.Notify && message.Text == Terms.TurnNotificationsOff)
             {
                 user.Notify = false;
@@ -261,8 +161,7 @@ public class YasnoBot
 
             if (message.Text == Terms.Today || message.Text == Terms.Tomorrow)
             {
-                var scheduleService = ServicesProvider.Get<IScheduleService>();
-                var fullSchedule = scheduleService.GetCurrent();
+                var fullSchedule = ScheduleService.GetCurrent();
 
                 if (fullSchedule is null)
                 {
