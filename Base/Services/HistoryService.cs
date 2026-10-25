@@ -1,4 +1,4 @@
-﻿using Base.DTOs;
+﻿using Base.DTOs.Schedule;
 using Base.Interfaces;
 using YasnoBot.YasnoLogger.Extensions;
 using YasnoLogger.Interfaces;

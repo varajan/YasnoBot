@@ -1,4 +1,5 @@
 ﻿using Base.DTOs;
+using Base.DTOs.Schedule;
 using Base.Extensions;
 using Base.Interfaces;
 using Telegram.Bot;

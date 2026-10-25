@@ -1,4 +1,5 @@
-﻿using Base.DTOs;
+﻿using Base.DTOs.Schedule;
+using Base.DTOs.Yasno;
 using Base.Extensions;
 using Base.Interfaces;
 using YasnoLogger.Interfaces;
@@ -49,7 +50,7 @@ public class YasnoService(IApi api, IDataBase database) : IScheduleService
         };
     }
 
-    private ScheduleSlotDto GetSlot(SlotDto slot)
+    private DTOs.Schedule.SlotDto GetSlot(DTOs.Yasno.SlotDto slot)
     {
         TimeOnly start = new(slot.Start / 60, slot.Start % 60);
         TimeOnly end = slot.End == 1440
@@ -57,7 +58,7 @@ public class YasnoService(IApi api, IDataBase database) : IScheduleService
             : new TimeOnly(slot.End / 60, slot.End % 60);
         var status = slot.Type == "NotPlanned" ? Status.PowerOn : Status.Blackout;
 
-        return new ScheduleSlotDto { Start = start, End = end, Status = status };
+        return new DTOs.Bot.SlotDto { Start = start, End = end, Status = status };
     }
 
     private async Task<(int cityId, int dsosId)> GetRegionData(string city, string dsos)
