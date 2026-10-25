@@ -2,31 +2,31 @@
 
 public class Terms
 {
-    public static string TurnNotificationsOff => $"{Icons.BellOff} Вимкнути сповіщення";
-    public static string TurnNotificationsOn => $"{Icons.BellOn} Увімкнути сповіщення";
+    public const string TurnNotificationsOff = $"{Icons.BellOff} Вимкнути сповіщення";
+    public const string TurnNotificationsOn = $"{Icons.BellOn} Увімкнути сповіщення";
     public const string CurrentStatus = $"{Icons.Chart} Поточний статус";
-    public static string Today => $"{Icons.Calendar} Сьогодні";
-    public static string Tomorrow => $"{Icons.Calendar} Завтра";
+    public const string Today = $"{Icons.Calendar} Сьогодні";
+    public const string Tomorrow = $"{Icons.Calendar} Завтра";
 
     public const string Schedule = "Розклад";
     public const string NoScheduleAvailable = "Розклад відсутній";
     public const string NoDataAvailable = "Немає даних";
-    public static string EmergencyBlackout => $"{Icons.Warning} Аварійні відключення";
+    public const string EmergencyBlackout = $"{Icons.Warning} Аварійні відключення";
 
-    public static string ThereIsElectricity => $"{Icons.BatteryFull} Світло є {{0}}";
-    public static string ThereIsNoElectricity => $"{Icons.BatteryEmpty} Світла немає {{0}}";
+    public const string ThereIsElectricity = $"{Icons.BatteryFull} Світло є {{0}}";
+    public const string ThereIsNoElectricity = $"{Icons.BatteryEmpty} Світла немає {{0}}";
 
-    public static string ThereWasElectricity => $"{Icons.BatteryEmpty} Світло було {{0}}";
-    public static string ThereWasNoElectricity => $"{Icons.BatteryFull} Світла не було {{0}}";
+    public const string ThereWasElectricity = $"{Icons.BatteryEmpty} Світло було {{0}}";
+    public const string ThereWasNoElectricity = $"{Icons.BatteryFull} Світла не було {{0}}";
 
     public const string NotificationsOn = "Сповіщення увімкнено";
     public const string NotificationsOff = "Сповіщення вимкнено";
 
     public const string NewVersionMessage = "Доступна нова версія {0}";
 
-    public static string NewScheduleMessage => $"{Icons.Calendar} Доступний новий розклад!";
-    public static string EmergencyBlackoutMessage => $"{Icons.Alert} Починаються аварійні відключення!";
-    public static string NextBlackoutMessage => $"{Icons.BatteryEmpty} Наступне відключення через 5 хвилин";
+    public const string NewScheduleMessage = $"{Icons.Calendar} Доступний новий розклад!";
+    public const string EmergencyBlackoutMessage = $"{Icons.Alert} Починаються аварійні відключення!";
+    public const string NextBlackoutMessage = $"{Icons.BatteryEmpty} Наступне відключення через 5 хвилин";
 }
 
 public class Icons

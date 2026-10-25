@@ -20,6 +20,7 @@ public class YasnoBot
     private static IScheduleService ScheduleService => ServicesProvider.Get<IScheduleService>();
     private static IHistoryService HistoryService => ServicesProvider.Get<IHistoryService>();
     private static IBotStateService DataService => ServicesProvider.Get<IBotStateService>();
+    private static ISettings Settings => ServicesProvider.Get<ISettings>();
 
     private static async Task Main()
     {
@@ -27,10 +28,11 @@ public class YasnoBot
         using var cts = new CancellationTokenSource();
         var receiverOptions = new ReceiverOptions { AllowedUpdates = [] };
         var notifyService = new TelegramBotNotifyService(botClient);
-        var scheduledTasks = new ScheduledTasks(botClient, Logger, notifyService, ScheduleService, UserRepository, HistoryService, DataService);
 
         ServicesProvider.AddApplicationServices();
         ServicesProvider.Add<INotifyService>(notifyService);
+
+        var scheduledTasks = new ScheduledTasks(botClient, Logger, notifyService, ScheduleService, UserRepository, HistoryService, DataService);
 
         botClient.StartReceiving(
             updateHandler: HandleUpdateAsync,
@@ -101,82 +103,71 @@ public class YasnoBot
             }
 
             // Admin commands
-            var settings = ServicesProvider.Get<ISettings>();
-
-            if (message.Text == "/settings")
+            if (message.Text.StartsWith("/set/"))
             {
-                var allSettings = settings.Keys.Select(key => $"{key}: {settings.Get(key)}");
-                var settingsMessage = string.Join("\n", allSettings) + "\n\n/settings/<KEY>: <VALUE>";
-
-                await NotifyService.Notify(message.Chat.Id, settingsMessage);
-                return;
-            }
-
-            if (message.Text.StartsWith("/settings/"))
-            {
-                var key = message.Text.SubString("/settings/", ":").Trim();
+                var key = message.Text.SubString("/set/", ":").Trim();
                 var value = message.Text.SubString(":").Trim();
 
-                settings.Set(key, value);
+                Settings.Set(key, value);
                 await NotifyService.Notify(message.Chat.Id, $"Setting updated: {key} = {value}");
                 return;
             }
-
-            if (message.Text == "/logs")
-            {
-                await NotifyService.Notify(message.Chat.Id, Logger.TopLogs);
-            }
             // Admin commands
 
-            if (user.Notify && message.Text == Terms.TurnNotificationsOff)
+            var replyMessage = string.Empty;
+            var turnNotificationBtn = user.Notify ? Terms.TurnNotificationsOff : Terms.TurnNotificationsOn;
+
+            switch (message.Text)
             {
-                user.Notify = false;
-                UserRepository.Save(user);
-            }
+                case "/settings":
+                    var allSettings = Settings.Keys.Select(key => $"{key}: {Settings.Get(key)}");
+                    var settingsMessage = string.Join("\n", allSettings) + "\n\n/set/<KEY>: <VALUE>";
+                    await NotifyService.Notify(message.Chat.Id, settingsMessage);
+                    return;
 
-            if (!user.Notify && message.Text == Terms.TurnNotificationsOn)
-            {
-                user.Notify = true;
-                UserRepository.Save(user);
-            }
+                case "/logs":
+                    await NotifyService.Notify(message.Chat.Id, Logger.TopLogs);
+                    return;
 
-            var replyMessage = user.Notify ? Terms.NotificationsOn : Terms.NotificationsOff;
-            var btnText = user.Notify ? Terms.TurnNotificationsOff : Terms.TurnNotificationsOn;
+                case Terms.TurnNotificationsOn:
+                case Terms.TurnNotificationsOff:
+                    user.Notify = message.Text == Terms.TurnNotificationsOn;
+                    UserRepository.Save(user);
+                    replyMessage = user.Notify ? Terms.NotificationsOn : Terms.NotificationsOff;
+                    turnNotificationBtn = user.Notify ? Terms.TurnNotificationsOff : Terms.TurnNotificationsOn;
+                    break;
 
-            if (message.Text == Terms.CurrentStatus)
-            {
-                var historyService = ServicesProvider.Get<IHistoryService>();
-                var lastRecord = historyService.GetLastRecord();
+                case Terms.CurrentStatus:
+                    var lastRecord = HistoryService.GetLastRecord();
+                    if (lastRecord is null)
+                    {
+                        replyMessage = Terms.NoDataAvailable;
+                    }
+                    else
+                    {
+                        var messageTemplate = lastRecord.Status == Status.PowerOn ? Terms.ThereIsElectricity : Terms.ThereIsNoElectricity;
+                        replyMessage = string.Format(messageTemplate, lastRecord.DateTime.GetTimeDifference());
+                    }
+                    break;
 
-                if (lastRecord is null)
-                {
-                    replyMessage = Terms.NoDataAvailable;
-                }
-                else
-                {
-                    var messageTemplate = lastRecord.Status == Status.PowerOn ? Terms.ThereIsElectricity : Terms.ThereIsNoElectricity;
-                    replyMessage = string.Format(messageTemplate, lastRecord.DateTime.GetTimeDifference());
-                }
-            }
-
-            if (message.Text == Terms.Today || message.Text == Terms.Tomorrow)
-            {
-                var fullSchedule = ScheduleService.GetCurrent();
-
-                if (fullSchedule is null)
-                {
-                    replyMessage = Terms.NoDataAvailable;
-                }
-                else
-                {
-                    var schedule = message.Text == Terms.Today ? fullSchedule.Today : fullSchedule.Tomorrow;
-                    replyMessage = GetScheduleMessage(schedule, message.Text == Terms.Today);
-                }
+                case Terms.Today:
+                case Terms.Tomorrow:
+                    var fullSchedule = ScheduleService.GetCurrent();
+                    if (fullSchedule is null)
+                    {
+                        replyMessage = Terms.NoDataAvailable;
+                    }
+                    else
+                    {
+                        var schedule = message.Text == Terms.Today ? fullSchedule.Today : fullSchedule.Tomorrow;
+                        replyMessage = GetScheduleMessage(schedule, message.Text == Terms.Today);
+                    }
+                    break;
             }
 
             var buttons = new List<List<string>>
             {
-                new() { btnText },
+                new() { turnNotificationBtn },
                 new() { Terms.CurrentStatus },
                 new() { Terms.Today, Terms.Tomorrow },
             };
