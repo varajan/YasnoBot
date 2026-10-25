@@ -1,5 +1,4 @@
 <Solution>
   <Project Path="Base/Base.csproj" />
   <Project Path="Bot/Bot.csproj" />
-  <Project Path="Service/Service.csproj" Id="e656f68b-a907-4d34-b95c-08c319b0a2b4" />
 </Solution>

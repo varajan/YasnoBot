@@ -22,6 +22,7 @@ public class YasnoBot
     private static IHistoryService HistoryService => ServicesProvider.Get<IHistoryService>();
     private static IBotStateService DataService => ServicesProvider.Get<IBotStateService>();
     private static ISettings Settings => ServicesProvider.Get<ISettings>();
+    private static IStatusService StatusService => ServicesProvider.Get<IStatusService>();
 
     private static async Task Main()
     {
@@ -33,7 +34,7 @@ public class YasnoBot
         ServicesProvider.AddApplicationServices();
         ServicesProvider.Add<INotifyService>(notifyService);
 
-        var scheduledTasks = new ScheduledTasks(botClient, Logger, notifyService, ScheduleService, UserRepository, HistoryService, DataService);
+        var scheduledTasks = new ScheduledTasks(botClient, Logger, notifyService, ScheduleService, UserRepository, StatusService, HistoryService, DataService);
 
         botClient.StartReceiving(
             updateHandler: HandleUpdateAsync,
@@ -42,11 +43,13 @@ public class YasnoBot
             cancellationToken: cts.Token
         );
 
-        await scheduledTasks.OnStartUp();
-        _ = Task.Run(async () => await scheduledTasks.DoEveryMinute(() => scheduledTasks.StatusChangedNotification(), 0));
-        _ = Task.Run(async () => await scheduledTasks.DoEveryMinute(() => scheduledTasks.NewScheduleNotification(), 5));
-        _ = Task.Run(async () => await scheduledTasks.DoEveryMinute(() => scheduledTasks.UpcomingBlackoutNotification(), 10));
-        _ = Task.Run(async () => await scheduledTasks.DoEveryMinute(() => scheduledTasks.UpdateIcon(), 15));
+        _ = Task.Run(async () => await scheduledTasks.DoOnce(() => scheduledTasks.SendNewVersionNotification()));
+        _ = Task.Run(async () => await scheduledTasks.DoEveryMinute(() => scheduledTasks.GetCurrentStatus(), 0));
+        _ = Task.Run(async () => await scheduledTasks.DoEveryMinute(() => scheduledTasks.StatusChangedNotification(), 5));
+        _ = Task.Run(async () => await scheduledTasks.DoEveryMinute(() => scheduledTasks.NewScheduleNotification(), 10));
+        _ = Task.Run(async () => await scheduledTasks.DoEveryMinute(() => scheduledTasks.UpcomingBlackoutNotification(), 15));
+        _ = Task.Run(async () => await scheduledTasks.DoEveryMinute(() => scheduledTasks.UpdateIcon(), 20));
+        _ = Task.Run(async () => await scheduledTasks.DoEvery10Minutes(() => scheduledTasks.UpdateSchedule()));
 
         Console.WriteLine("Starting Bot.");
         await Task.Delay(Timeout.Infinite, cts.Token);
