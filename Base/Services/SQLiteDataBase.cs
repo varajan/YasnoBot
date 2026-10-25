@@ -1,7 +1,7 @@
-﻿using Microsoft.Data.Sqlite;
+﻿using Base.Extensions;
+using Base.Interfaces;
+using Microsoft.Data.Sqlite;
 using MoreLinq;
-using YasnoBot.YasnoLogger.Extensions;
-using YasnoLogger.Interfaces;
 
 namespace Base.Services;
 

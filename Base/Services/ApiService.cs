@@ -1,7 +1,6 @@
 ﻿using Base.Interfaces;
 using System.Net.Http.Json;
 using System.Text.Json;
-using YasnoLogger.Interfaces;
 
 namespace Base.Services;
 

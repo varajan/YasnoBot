@@ -1,7 +1,6 @@
 ﻿using Base.DTOs.Schedule;
 using Base.Interfaces;
 using System.Net.NetworkInformation;
-using YasnoLogger.Interfaces;
 
 namespace Base.Services;
 

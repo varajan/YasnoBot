@@ -1,31 +1,29 @@
 ﻿using System.Globalization;
 using System.Text.RegularExpressions;
 
-namespace YasnoBot.YasnoLogger.Extensions;
+namespace Base.Extensions;
 
 public static class StringExtensions
 {
-public static string FormatBytes(this long bytes)
-{
-    if (bytes < 0)
-        throw new ArgumentOutOfRangeException(nameof(bytes), "Bytes cannot be negative.");
-
-    string[] suffixes = { "B", "KB", "MB", "GB", "TB", "PB", "EB" };
-    
-    int counter = 0;
-    double number = bytes;
-    
-    // Divide by 1024 until the value is less than 1024 (or we reach the largest unit)
-    while (number >= 1024 && counter < suffixes.Length - 1)
+    public static string FormatBytes(this long bytes)
     {
-        number /= 1024;
-        counter++;
+        if (bytes < 0)
+            throw new ArgumentOutOfRangeException(nameof(bytes), "Bytes cannot be negative.");
+
+        string[] suffixes = { "B", "KB", "MB", "GB", "TB", "PB", "EB" };
+
+        int counter = 0;
+        double number = bytes;
+
+        while (number >= 1024 && counter < suffixes.Length - 1)
+        {
+            number /= 1024;
+            counter++;
+        }
+
+        return $"{number:0.##} {suffixes[counter]}";
     }
 
-    // Format with up to 2 decimal places, removing trailing zeros (e.g., "1.50 GB" -> "1.5 GB")
-    return $"{number:0.##} {suffixes[counter]}";
-}
-    
     public static string NullIfEmpty(this string line)
     {
         if (string.IsNullOrWhiteSpace(line)) return null;

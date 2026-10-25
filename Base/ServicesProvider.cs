@@ -1,8 +1,7 @@
 ﻿using Base.Interfaces;
+using Base.Loggers;
 using Base.Services;
 using Microsoft.Extensions.DependencyInjection;
-using YasnoLogger.Interfaces;
-using YasnoLogger.Loggers;
 
 namespace Base;
 

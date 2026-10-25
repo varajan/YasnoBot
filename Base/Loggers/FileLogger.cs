@@ -1,7 +1,7 @@
-﻿using YasnoLogger.Interfaces;
-using YasnoBot.YasnoLogger.Extensions;
+﻿using Base.Interfaces;
+using Base.Extensions;
 
-namespace YasnoLogger.Loggers;
+namespace Base.Loggers;
 
 public class FileLogger : ILogger
 {

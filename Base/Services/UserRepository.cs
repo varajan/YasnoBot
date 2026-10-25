@@ -1,6 +1,5 @@
 ﻿using Base.DTOs;
 using Base.Interfaces;
-using YasnoLogger.Interfaces;
 
 namespace Base.Services;
 

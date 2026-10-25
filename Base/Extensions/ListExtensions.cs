@@ -1,4 +1,4 @@
-﻿namespace YasnoBot.YasnoLogger.Extensions;
+﻿namespace Base.Extensions;
 
 public static class ListExtensions
 {

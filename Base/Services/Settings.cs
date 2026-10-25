@@ -1,5 +1,4 @@
 ﻿using Base.Interfaces;
-using YasnoLogger.Interfaces;
 
 namespace Base.Services;
 

@@ -2,7 +2,6 @@
 using Base.DTOs.Yasno;
 using Base.Extensions;
 using Base.Interfaces;
-using YasnoLogger.Interfaces;
 
 namespace Base.Services;
 

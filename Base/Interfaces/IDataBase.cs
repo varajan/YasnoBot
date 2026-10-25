@@ -1,4 +1,4 @@
-﻿namespace YasnoLogger.Interfaces;
+﻿namespace Base.Interfaces;
 
 public interface IDataBase
 {

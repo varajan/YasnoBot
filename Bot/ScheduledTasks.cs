@@ -4,7 +4,6 @@ using Base.Extensions;
 using Base.Interfaces;
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using YasnoLogger.Interfaces;
 
 namespace Bot;
 
