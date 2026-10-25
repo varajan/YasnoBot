@@ -20,10 +20,10 @@ public static class DateTimeExtensions
             parts.Add($"{diff.Days} {GetDeclension(diff.Days, "день", "дні", "днів")}");
 
         if (diff.Hours > 0)
-            parts.Add($"{diff.Hours} {GetDeclension(diff.Hours, "година", "години", "годин")}");
+            parts.Add($"{diff.Hours} {GetDeclension(diff.Hours, "годину", "години", "годин")}");
 
         if (diff.Minutes > 0)
-            parts.Add($"{diff.Minutes} {GetDeclension(diff.Minutes, "хвилина", "хвилини", "хвилин")}");
+            parts.Add($"{diff.Minutes} {GetDeclension(diff.Minutes, "хвилину", "хвилини", "хвилин")}");
 
         return parts.Count > 0 ? string.Join(", ", parts) : "менше хвилини";
     }
