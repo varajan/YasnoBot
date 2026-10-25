@@ -60,7 +60,7 @@ public class DayScheduleDto
     public List<SlotDto> Slots { get; set; } = new();
 
     [JsonPropertyName("date")]
-    public DateTimeOffset Date { get; set; }
+    public DateTime Date { get; set; }
 
     [JsonPropertyName("status")]
     public string Status { get; set; } = string.Empty;

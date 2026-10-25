@@ -33,8 +33,19 @@ public class YasnoService(IApi api, IDataBase database) : IScheduleService
 
         return new TwoDayScheduleDto
         {
-            Today = new ScheduleDto { Slots = today, IsEmergence = schedule.Today.Status == "EmergencyShutdowns" },
-            Tomorrow = new ScheduleDto { Slots = tomorrow, IsEmergence = schedule.Tomorrow.Status == "EmergencyShutdowns" },
+            Today = new ScheduleDto
+            {
+                Slots = today,
+                Date = schedule.Today.Date,
+                IsEmergence = schedule.Today.Status == "EmergencyShutdowns"
+            },
+
+            Tomorrow = new ScheduleDto
+            {
+                Slots = tomorrow,
+                Date = schedule.Tomorrow.Date,
+                IsEmergence = schedule.Tomorrow.Status == "EmergencyShutdowns"
+            },
         };
     }
 

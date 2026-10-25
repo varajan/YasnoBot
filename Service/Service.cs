@@ -31,6 +31,12 @@ public class Service
                 {
                     logger.Log("Updating schedule.");
                     scheduleService.SetCurrent(newSchedule);
+
+                    if (currentSchedule?.Tomorrow?.Date == newSchedule.Today?.Date)
+                    {
+                        var stateService = ServicesProvider.Get<IBotStateService>();
+                        stateService.MarkAsNotified(newSchedule);
+                    }
                 }
             }
 
