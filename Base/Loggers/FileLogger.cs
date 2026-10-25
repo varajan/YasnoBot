@@ -1,5 +1,5 @@
-﻿using Base.Interfaces;
-using Base.Extensions;
+﻿using Base.Extensions;
+using Base.Interfaces;
 
 namespace Base.Loggers;
 
@@ -16,7 +16,7 @@ public class FileLogger : ILogger
             {
                 if (!File.Exists(LogFile)) return string.Empty;
 
-                var logFileSize = Environment.NewLine + $"Log file size: {new FileInfo(LogFile).Length.FormatBytes()} bytes";
+                var logFileSize = Environment.NewLine + $"Log file size: {new FileInfo(LogFile).Length.FormatBytes()}";
                 var lastLines = File.ReadLines(LogFile).TakeLast(25).ToList();
                 return string.Join(Environment.NewLine, lastLines) + logFileSize;
             }
