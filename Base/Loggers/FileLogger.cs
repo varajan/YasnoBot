@@ -1,4 +1,5 @@
 ﻿using YasnoLogger.Interfaces;
+using YasnoBot.Extensions;
 
 namespace YasnoLogger.Loggers;
 
@@ -15,7 +16,7 @@ public class FileLogger : ILogger
             {
                 if (!File.Exists(LogFile)) return string.Empty;
 
-                var logFileSize = Environment.NewLine + $"Log file size: {new FileInfo(LogFile).Length} bytes";
+                var logFileSize = Environment.NewLine + $"Log file size: {new FileInfo(LogFile).Length.FormatBytes()} bytes";
                 var lastLines = File.ReadLines(LogFile).TakeLast(25).ToList();
                 return string.Join(Environment.NewLine, lastLines) + logFileSize;
             }
