@@ -21,6 +21,7 @@ public static class ServicesProvider
         services.AddSingleton<ISettings, Settings>();
         services.AddSingleton<IScheduleService, YasnoService>();
         services.AddSingleton<IApi, ApiService>();
+        services.AddSingleton<IDataService, DataService>();
 
         Instance = services.BuildServiceProvider();
     }

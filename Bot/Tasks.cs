@@ -4,12 +4,11 @@ using Base.Extensions;
 using Base.Interfaces;
 using Telegram.Bot;
 using Telegram.Bot.Types;
-using YasnoBot.YasnoLogger.Extensions;
 using YasnoLogger.Interfaces;
 
 namespace Bot;
 
-internal class Tasks(ITelegramBotClient botClient)
+internal class Tasks(ITelegramBotClient botClient, IDataService dataService)
 {
     private static ILogger Logger => ServicesProvider.Get<ILogger>();
     private static IUserRepository UserRepository => ServicesProvider.Get<IUserRepository>();
@@ -49,14 +48,14 @@ internal class Tasks(ITelegramBotClient botClient)
         }
     }
 
-    public static async Task NewScheduleNotification()
+    public async Task NewScheduleNotification()
     {
         var schedule = ScheduleService.GetCurrent();
-        if (schedule is null || IsNotified(schedule)) return;
+        if (schedule is null || dataService.IsNotified(schedule)) return;
 
         Logger.Log("New Schedule is available!");
         await NotifyUsers(schedule.Today.IsEmergence ? Terms.EmergencyBlackoutMessage : Terms.NewScheduleMessage);
-        SetNotified(schedule);
+        dataService.SetNotified(schedule);
     }
 
     public async Task UpdateIcon()
@@ -78,7 +77,7 @@ internal class Tasks(ITelegramBotClient botClient)
         var now = new TimeOnly(DateTime.Now.Hour, DateTime.Now.Minute);
         var in5minutes = now.AddMinutes(5);
         var currentSlot = schedule is null ? default : schedule.Today.Slots.Last(s => s.Start < now);
-        if (currentSlot?.Status == Status.Blackout || 
+        if (currentSlot?.Status == Status.Blackout ||
            (currentSlot?.Status == Status.PowerOn && currentSlot.End < in5minutes))
         {
             await UpdateIcon(iconOnOff);
@@ -88,20 +87,20 @@ internal class Tasks(ITelegramBotClient botClient)
         await UpdateIcon(iconOn);
     }
 
-    public static async Task StatusChangedNotification()
+    public async Task StatusChangedNotification()
     {
         var currentState = HistoryService.GetLastRecord();
         var previousState = HistoryService.GetLastRecord();
-        if (currentState is null || previousState is null || IsNotified(currentState)) return;
+        if (currentState is null || previousState is null || dataService.IsNotified(currentState)) return;
 
         var messageTemplate = currentState.Status == Status.PowerOn ? Terms.ThereWasNoElectricity : Terms.ThereWasElectricity;
         var message = string.Format(messageTemplate, previousState.DateTime.GetTimeDifference(currentState.DateTime));
 
         await NotifyUsers(message);
-        SetNotified(currentState);
+        dataService.SetNotified(currentState);
     }
 
-    public static async Task UpcomingBlackoutNotification()
+    public async Task UpcomingBlackoutNotification()
     {
         var currentState = HistoryService.GetLastRecord();
         if (currentState?.Status == Status.Blackout) return;
@@ -112,11 +111,11 @@ internal class Tasks(ITelegramBotClient botClient)
         var now = new TimeOnly(DateTime.Now.Hour, DateTime.Now.Minute);
         var in5minutes = now.AddMinutes(5);
         var currentSlot = schedule is null ? default : schedule.Today.Slots.Last(s => s.Start < now);
-        if (currentSlot?.Status == Status.PowerOn && currentSlot.End < in5minutes && !IsNotified(currentSlot))
+        if (currentSlot?.Status == Status.PowerOn && currentSlot.End < in5minutes && !dataService.IsNotified(currentSlot))
         {
             Logger.Log("Next blackout is in 5 minutes");
             await NotifyUsers(Terms.NextBlackoutMessage);
-            SetNotified(currentSlot);
+            dataService.SetNotified(currentSlot);
         }
     }
 
@@ -137,39 +136,15 @@ internal class Tasks(ITelegramBotClient botClient)
 
     private async Task UpdateIcon(string filePath)
     {
-        if (filePath == GetCurrentIcon()) return;
-        if (DateTime.Now.AddMinutes(-5) < GetIconUpdateTime()) return;
+        if (filePath == dataService.GetCurrentIcon()) return;
+        if (DateTime.Now.AddMinutes(-5) < dataService.GetIconUpdateTime()) return;
 
         await using var fileStream = new FileStream(filePath, FileMode.Open, FileAccess.Read);
         var inputPhoto = new InputProfilePhotoStatic { Photo = fileStream };
 
         await botClient.SetMyProfilePhoto(inputPhoto);
-        SetCurrentIcon(filePath);
-        SetIconUpdateTime();
+        dataService.SetCurrentIcon(filePath);
+        dataService.SetIconUpdateTime();
         Logger.Log($"Update Icon: {filePath}");
     }
-
-    private static bool IsNotified(object entity) =>
-        DataBase.GetRows($"SELECT * FROM Data WHERE Key = '{entity.GetGuid()}'").Any();
-
-    private static void SetNotified(object entity) =>
-        DataBase.Execute($"INSERT INTO Data (Key, Value) VALUES ('{entity.GetGuid()}', 'done')");
-
-    private static string GetCurrentIcon() => DataBase.GetValue($"SELECT Value FROM Data WHERE Key = 'Icon'");
-
-    private static void SetCurrentIcon(string icon) => DataBase.Execute($"INSERT OR REPLACE INTO Data (Key, Value) VALUES ('Icon', '{icon}')");
-
-    private static DateTime GetIconUpdateTime()
-    {
-        try
-        {
-            return DataBase.GetValue($"SELECT Value FROM Data WHERE Key = 'IconUpdateTime'").ToDateTime();
-        }
-        catch
-        {
-            return DateTime.Now.AddHours(-1);
-        }
-    }
-
-    private static void SetIconUpdateTime() => DataBase.Execute($"INSERT OR REPLACE INTO Data (Key, Value) VALUES ('IconUpdateTime', '{DateTime.Now}')");
 }
