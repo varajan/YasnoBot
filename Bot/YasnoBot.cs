@@ -116,7 +116,7 @@ public class YasnoBot
             }
             // Admin commands
 
-            var replyMessage = string.Empty;
+            var replyMessage = Terms.NotificationsOn;
             var turnNotificationBtn = user.Notify ? Terms.TurnNotificationsOff : Terms.TurnNotificationsOn;
 
             switch (message.Text)
