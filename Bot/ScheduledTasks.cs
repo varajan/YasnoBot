@@ -119,7 +119,7 @@ public class ScheduledTasks(
     public async Task StatusChangedNotification()
     {
         var currentState = historyService.GetLastRecord();
-        var previousState = historyService.GetLastRecord();
+        var previousState = historyService.GetPreviousRecord();
         if (currentState is null || previousState is null || botStateService.HasBeenNotified(currentState)) return;
 
         var messageTemplate = currentState.Status == Status.PowerOn ? Terms.ThereWasNoElectricity : Terms.ThereWasElectricity;
