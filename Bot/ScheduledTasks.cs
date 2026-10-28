@@ -80,10 +80,27 @@ public class ScheduledTasks(
     public async Task NewScheduleNotification()
     {
         var schedule = scheduleService.GetCurrent();
-        if (schedule is null || botStateService.HasBeenNotified(schedule)) return;
+        if (schedule is null) return;
 
+        await NotifyAboutNewSchedule(schedule.Today, true);
+        await NotifyAboutNewSchedule(schedule.Tomorrow);
+    }
+    
+    private async Task NotifyAboutNewSchedule(ScheduleDto schedule, bool today = false)
+    {
+        if (botStateService.HasBeenNotified(schedule)) return;
         logger.Log("New Schedule is available!");
-        await NotifyUsers(schedule.Today.IsEmergence ? Terms.EmergencyBlackoutMessage : Terms.NewScheduleMessage);
+
+        if (today && schedule.IsEmergence)
+        {
+            await NotifyUsers(Terms.EmergencyBlackoutMessage);
+            botStateService.MarkAsNotified(schedule);
+            return;
+        }
+
+        var message = GetScheduleMessage(schedule, today);
+        await NotifyUsers(today ? Terms.NewScheduleMessage4Today : Terms.NewScheduleMessage4Tomorrow);
+        await NotifyUsers(message);
         botStateService.MarkAsNotified(schedule);
     }
 
@@ -177,6 +194,26 @@ public class ScheduledTasks(
         }
     }
 
+    public string GetScheduleMessage(ScheduleDto schedule, bool today)
+    {
+        if (schedule is null || schedule.Slots is null || !schedule.Slots.Any())
+        {
+            return Terms.NoScheduleAvailable;
+        }
+
+        var now = new TimeOnly(DateTime.Now.Hour, DateTime.Now.Minute);
+        var message = $"{Terms.Schedule}:\n";
+        if (schedule.IsEmergence) message += Terms.EmergencyBlackout;
+
+        foreach (var slot in schedule.Slots)
+        {
+            var arrow = today && now.IsBetween(slot.Start, slot.End) ? Icons.Arrow : string.Empty;
+            var status = slot.Status == Status.PowerOn ? Icons.BatteryFull : Icons.BatteryEmpty;
+            message += $"{slot.Start:HH:mm} - {slot.End:HH:mm} {status} {arrow}\n";
+        }
+        return message;
+    }
+    
     private async Task NotifyUsers(string message)
     {
         foreach (var user in UsersToNotify)

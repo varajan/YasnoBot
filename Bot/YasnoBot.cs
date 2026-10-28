@@ -21,6 +21,7 @@ public class YasnoBot
     private static IBotStateService DataService => ServicesProvider.Get<IBotStateService>();
     private static ISettings Settings => ServicesProvider.Get<ISettings>();
     private static IStatusService StatusService => ServicesProvider.Get<IStatusService>();
+    private static ScheduledTasks scheduledTasks;
 
     private static async Task Main()
     {
@@ -32,7 +33,7 @@ public class YasnoBot
         ServicesProvider.AddApplicationServices();
         ServicesProvider.Add<INotifyService>(notifyService);
 
-        var scheduledTasks = new ScheduledTasks(botClient, Logger, notifyService, ScheduleService, UserRepository, StatusService, HistoryService, DataService);
+        scheduledTasks = new ScheduledTasks(botClient, Logger, notifyService, ScheduleService, UserRepository, StatusService, HistoryService, DataService);
 
         botClient.StartReceiving(
             updateHandler: HandleUpdateAsync,
@@ -162,7 +163,7 @@ public class YasnoBot
                     else
                     {
                         var schedule = message.Text == Terms.Today ? fullSchedule.Today : fullSchedule.Tomorrow;
-                        replyMessage = GetScheduleMessage(schedule, message.Text == Terms.Today);
+                        replyMessage = scheduledTasks.GetScheduleMessage(schedule, message.Text == Terms.Today);
                     }
                     break;
             }
@@ -180,25 +181,5 @@ public class YasnoBot
             Console.WriteLine(e);
             Logger.Log(e);
         }
-    }
-
-    private static string GetScheduleMessage(ScheduleDto schedule, bool today)
-    {
-        if (schedule is null || schedule.Slots is null || !schedule.Slots.Any())
-        {
-            return Terms.NoScheduleAvailable;
-        }
-
-        var now = new TimeOnly(DateTime.Now.Hour, DateTime.Now.Minute);
-        var message = $"{Terms.Schedule}:\n";
-        if (schedule.IsEmergence) message += Terms.EmergencyBlackout;
-
-        foreach (var slot in schedule.Slots)
-        {
-            var arrow = today && now.IsBetween(slot.Start, slot.End) ? Icons.Arrow : string.Empty;
-            var status = slot.Status == Status.PowerOn ? Icons.BatteryFull : Icons.BatteryEmpty;
-            message += $"{slot.Start:HH:mm} - {slot.End:HH:mm} {status} {arrow}\n";
-        }
-        return message;
     }
 }
