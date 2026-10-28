@@ -177,6 +177,26 @@ public class ScheduledTasks(
         }
     }
 
+    public string GetScheduleMessage(ScheduleDto schedule, bool today)
+    {
+        if (schedule is null || schedule.Slots is null || !schedule.Slots.Any())
+        {
+            return Terms.NoScheduleAvailable;
+        }
+
+        var now = new TimeOnly(DateTime.Now.Hour, DateTime.Now.Minute);
+        var message = $"{Terms.Schedule}:\n";
+        if (schedule.IsEmergence) message += Terms.EmergencyBlackout;
+
+        foreach (var slot in schedule.Slots)
+        {
+            var arrow = today && now.IsBetween(slot.Start, slot.End) ? Icons.Arrow : string.Empty;
+            var status = slot.Status == Status.PowerOn ? Icons.BatteryFull : Icons.BatteryEmpty;
+            message += $"{slot.Start:HH:mm} - {slot.End:HH:mm} {status} {arrow}\n";
+        }
+        return message;
+    }
+    
     private async Task NotifyUsers(string message)
     {
         foreach (var user in UsersToNotify)
