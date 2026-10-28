@@ -80,10 +80,27 @@ public class ScheduledTasks(
     public async Task NewScheduleNotification()
     {
         var schedule = scheduleService.GetCurrent();
-        if (schedule is null || botStateService.HasBeenNotified(schedule)) return;
+        if (schedule is null) return;
 
+        await NotifyAboutNewSchedule(schedule.Today, true);
+        await NotifyAboutNewSchedule(schedule.Tomorrow);
+    }
+    
+    private async Task NotifyAboutNewSchedule(ScheduleDto schedule, bool today = false)
+    {
+        if (botStateService.HasBeenNotified(schedule)) return;
         logger.Log("New Schedule is available!");
-        await NotifyUsers(schedule.Today.IsEmergence ? Terms.EmergencyBlackoutMessage : Terms.NewScheduleMessage);
+
+        if (today && schedule.IsEmergence)
+        {
+            await NotifyUsers(Terms.EmergencyBlackoutMessage);
+            botStateService.MarkAsNotified(schedule);
+            return;
+        }
+
+        var message = GetScheduleMessage(schedule, today);
+        await NotifyUsers(today ? Terms.NewScheduleMessage4Today : Terms.NewScheduleMessage4Tomorrow);
+        await NotifyUsers(message);
         botStateService.MarkAsNotified(schedule);
     }
 
