@@ -22,7 +22,7 @@ public class Terms
     public const string NotificationsOn = "Сповіщення увімкнено";
     public const string NotificationsOff = "Сповіщення вимкнено";
 
-    public const string NewVersionMessage = "Бот оновлено до версії {0}";
+    public const string NewVersionMessage = "Бот запущено, поточна версія {0}";
 
     public const string NewScheduleMessage = $"{Icons.Calendar} Доступний новий розклад!";
     public const string NewScheduleMessage4Today = $"{Icons.Calendar} Доступний новий розклад на сьогодні!";
