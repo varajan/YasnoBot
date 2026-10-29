@@ -203,7 +203,7 @@ public class ScheduledTasks(
         }
 
         var now = new TimeOnly(DateTime.Now.Hour, DateTime.Now.Minute);
-        var message = $"{Terms.Schedule}:\n";
+        var message = string.Empty;
         if (schedule.IsEmergence) message += Terms.EmergencyBlackout;
 
         foreach (var slot in schedule.Slots)
