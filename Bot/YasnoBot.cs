@@ -149,7 +149,9 @@ public class YasnoBot
                     else
                     {
                         var messageTemplate = lastRecord.Status == Status.PowerOn ? Terms.ThereIsElectricity : Terms.ThereIsNoElectricity;
-                        replyMessage = string.Format(messageTemplate, lastRecord.DateTime.GetTimeDifference());
+                        var duration = lastRecord.DateTime.GetTimeDifference();
+                        var nextChange = scheduledTasks.GetNextStatusChange();
+                        replyMessage = string.Format(messageTemplate, duration, nextChange);
                     }
                     break;
 

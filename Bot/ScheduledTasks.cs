@@ -85,7 +85,7 @@ public class ScheduledTasks(
         await NotifyAboutNewSchedule(schedule.Today, true);
         await NotifyAboutNewSchedule(schedule.Tomorrow);
     }
-    
+
     private async Task NotifyAboutNewSchedule(ScheduleDto schedule, bool today = false)
     {
         if (botStateService.HasBeenNotified(schedule)) return;
@@ -140,10 +140,25 @@ public class ScheduledTasks(
         if (currentState is null || previousState is null || botStateService.HasBeenNotified(currentState)) return;
 
         var messageTemplate = currentState.Status == Status.PowerOn ? Terms.ThereWasNoElectricity : Terms.ThereWasElectricity;
-        var message = string.Format(messageTemplate, previousState.DateTime.GetTimeDifference(currentState.DateTime));
+        var duration = previousState.DateTime.GetTimeDifference(currentState.DateTime);
+        var nextChange = GetNextStatusChange();
+        var message = string.Format(messageTemplate, duration, nextChange);
 
         await NotifyUsers(message);
         botStateService.MarkAsNotified(currentState);
+    }
+
+    public string GetNextStatusChange()
+    {
+        var currentState = historyService.GetLastRecord();
+        if (currentState is null) return "невідомо";
+
+        var now = new TimeOnly(DateTime.Now.Hour, DateTime.Now.Minute);
+        var schedule = scheduleService.GetCurrent();
+        var nextSlot =
+            schedule?.Today.Slots.FirstOrDefault(s => s.Status != currentState.Status && s.Start > now) ??
+            schedule?.Tomorrow?.Slots.FirstOrDefault(s => s.Status != currentState.Status);
+        return nextSlot?.Start.ToString("HH:mm") ?? "невідомо";
     }
 
     public async Task UpcomingBlackoutNotification()
@@ -214,7 +229,7 @@ public class ScheduledTasks(
         }
         return message;
     }
-    
+
     private async Task NotifyUsers(string message)
     {
         foreach (var user in UsersToNotify)
