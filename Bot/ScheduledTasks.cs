@@ -159,7 +159,7 @@ public class ScheduledTasks(
 
         return currentState.Status == currentSlot.Status
             ? currentSlot.End.ToString("HH:mm")
-            : Terms.ExpectedAt + currentSlot.Start.ToString("HH:mm");
+            : Terms.ExpectedAt.ToLower() + currentSlot.Start.ToString("HH:mm");
     }
 
     public async Task UpcomingBlackoutNotification()
