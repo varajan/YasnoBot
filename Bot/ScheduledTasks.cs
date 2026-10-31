@@ -141,24 +141,25 @@ public class ScheduledTasks(
 
         var messageTemplate = currentState.Status == Status.PowerOn ? Terms.ThereWasNoElectricity : Terms.ThereWasElectricity;
         var duration = previousState.DateTime.GetTimeDifference(currentState.DateTime);
-        var nextChange = GetNextStatusChange();
+        var nextChange = GetNextStatusChange(currentState);
         var message = string.Format(messageTemplate, duration, nextChange);
 
         await NotifyUsers(message);
         botStateService.MarkAsNotified(currentState);
     }
 
-    public string GetNextStatusChange()
+    public string GetNextStatusChange(StatisticsDto currentState)
     {
-        var currentState = historyService.GetLastRecord();
-        if (currentState is null) return "невідомо";
-
         var now = new TimeOnly(DateTime.Now.Hour, DateTime.Now.Minute);
         var schedule = scheduleService.GetCurrent();
-        var nextSlot =
-            schedule?.Today.Slots.FirstOrDefault(s => s.Status != currentState.Status && s.Start > now) ??
-            schedule?.Tomorrow?.Slots.FirstOrDefault(s => s.Status != currentState.Status);
-        return nextSlot?.Start.ToString("HH:mm") ?? "невідомо";
+        var currentSlot = schedule?.Today.Slots.LastOrDefault(s => s.Start < now) ??
+                          schedule?.Tomorrow?.Slots.FirstOrDefault();
+
+        if (currentSlot is null) return Terms.Unknown;
+
+        return currentState.Status == currentSlot.Status
+            ? currentSlot.End.ToString("HH:mm")
+            : Terms.ExpectedAt + currentSlot.Start.ToString("HH:mm");
     }
 
     public async Task UpcomingBlackoutNotification()

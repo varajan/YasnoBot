@@ -9,6 +9,8 @@ public class Terms
     public const string Tomorrow = $"{Icons.Calendar} Завтра";
 
     public const string NoScheduleAvailable = "Розклад відсутній";
+    public const string ExpectedAt = "Очікувалось о ";
+    public const string Unknown = "невідомо";
     public const string NoDataAvailable = "Немає даних";
     public const string EmergencyBlackout = $"{Icons.Warning} Аварійні відключення";
 

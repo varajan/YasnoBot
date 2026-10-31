@@ -141,16 +141,16 @@ public class YasnoBot
                     break;
 
                 case Terms.CurrentStatus:
-                    var lastRecord = HistoryService.GetLastRecord();
-                    if (lastRecord is null)
+                    var currentState = HistoryService.GetLastRecord();
+                    if (currentState is null)
                     {
                         replyMessage = Terms.NoDataAvailable;
                     }
                     else
                     {
-                        var messageTemplate = lastRecord.Status == Status.PowerOn ? Terms.ThereIsElectricity : Terms.ThereIsNoElectricity;
-                        var duration = lastRecord.DateTime.GetTimeDifference();
-                        var nextChange = scheduledTasks.GetNextStatusChange();
+                        var messageTemplate = currentState.Status == Status.PowerOn ? Terms.ThereIsElectricity : Terms.ThereIsNoElectricity;
+                        var duration = currentState.DateTime.GetTimeDifference();
+                        var nextChange = scheduledTasks.GetNextStatusChange(currentState);
                         replyMessage = string.Format(messageTemplate, duration, nextChange);
                     }
                     break;
