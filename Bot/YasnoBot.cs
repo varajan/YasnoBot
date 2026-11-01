@@ -1,6 +1,5 @@
 ﻿using Base;
 using Base.DTOs;
-using Base.DTOs.Schedule;
 using Base.Extensions;
 using Base.Interfaces;
 using System.Text.RegularExpressions;
@@ -21,7 +20,8 @@ public class YasnoBot
     private static IBotStateService DataService => ServicesProvider.Get<IBotStateService>();
     private static ISettings Settings => ServicesProvider.Get<ISettings>();
     private static IStatusService StatusService => ServicesProvider.Get<IStatusService>();
-    private static ScheduledTasks scheduledTasks;
+    private static ScheduledTasks? scheduledTasks;
+    private static OneTimeRunTasks? oneTimeRunTasks;
 
     private static async Task Main()
     {
@@ -34,6 +34,7 @@ public class YasnoBot
         ServicesProvider.Add<INotifyService>(notifyService);
 
         scheduledTasks = new ScheduledTasks(botClient, Logger, notifyService, ScheduleService, UserRepository, StatusService, HistoryService, DataService);
+        oneTimeRunTasks = new OneTimeRunTasks(Logger, notifyService, UserRepository, HistoryService, ScheduleService);
 
         botClient.StartReceiving(
             updateHandler: HandleUpdateAsync,
@@ -42,12 +43,15 @@ public class YasnoBot
             cancellationToken: cts.Token
         );
 
-        _ = Task.Run(async () => await scheduledTasks.DoOnce(() => scheduledTasks.SendNewVersionNotification()));
+        _ = Task.Run(async () => await oneTimeRunTasks.DoOnce(() => oneTimeRunTasks.SendNewVersionNotification()));
+        _ = Task.Run(async () => await oneTimeRunTasks.DoOnce(() => oneTimeRunTasks.SendCurrentStatusNotification()));
+
         _ = Task.Run(async () => await scheduledTasks.DoEveryMinute(() => scheduledTasks.GetCurrentStatus(), 0));
         _ = Task.Run(async () => await scheduledTasks.DoEveryMinute(() => scheduledTasks.StatusChangedNotification(), 5));
         _ = Task.Run(async () => await scheduledTasks.DoEveryMinute(() => scheduledTasks.NewScheduleNotification(), 10));
         _ = Task.Run(async () => await scheduledTasks.DoEveryMinute(() => scheduledTasks.UpcomingBlackoutNotification(), 15));
         _ = Task.Run(async () => await scheduledTasks.DoEveryMinute(() => scheduledTasks.UpdateIcon(), 20));
+
         _ = Task.Run(async () => await scheduledTasks.DoEvery10Minutes(() => scheduledTasks.UpdateSchedule()));
 
         Console.WriteLine("Starting Bot.");
@@ -119,6 +123,7 @@ public class YasnoBot
 
             var replyMessage = Terms.NotificationsOn;
             var turnNotificationBtn = user.Notify ? Terms.TurnNotificationsOff : Terms.TurnNotificationsOn;
+            var messages = new Messages(HistoryService, ScheduleService);
 
             switch (message.Text)
             {
@@ -141,32 +146,12 @@ public class YasnoBot
                     break;
 
                 case Terms.CurrentStatus:
-                    var currentState = HistoryService.GetLastRecord();
-                    if (currentState is null)
-                    {
-                        replyMessage = Terms.NoDataAvailable;
-                    }
-                    else
-                    {
-                        var messageTemplate = currentState.Status == Status.PowerOn ? Terms.ThereIsElectricity : Terms.ThereIsNoElectricity;
-                        var duration = currentState.DateTime.GetTimeDifference();
-                        var nextChange = scheduledTasks.GetNextStatusChange(currentState);
-                        replyMessage = string.Format(messageTemplate, duration, nextChange);
-                    }
+                    replyMessage = messages.GetCurrentStatusMessage() ?? Terms.NoDataAvailable;
                     break;
 
                 case Terms.Today:
                 case Terms.Tomorrow:
-                    var fullSchedule = ScheduleService.GetCurrent();
-                    if (fullSchedule is null)
-                    {
-                        replyMessage = Terms.NoDataAvailable;
-                    }
-                    else
-                    {
-                        var schedule = message.Text == Terms.Today ? fullSchedule.Today : fullSchedule.Tomorrow;
-                        replyMessage = scheduledTasks.GetScheduleMessage(schedule, message.Text == Terms.Today);
-                    }
+                    replyMessage = messages.GetScheduleMessage(message.Text == Terms.Today) ?? Terms.NoDataAvailable;
                     break;
             }
 

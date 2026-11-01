@@ -1,5 +1,4 @@
-﻿using Base.DTOs;
-using Base.DTOs.Schedule;
+﻿using Base.DTOs.Schedule;
 using Base.Extensions;
 using Base.Interfaces;
 using Telegram.Bot;
@@ -15,33 +14,11 @@ public class ScheduledTasks(
     IUserRepository userRepository,
     IStatusService statusService,
     IHistoryService historyService,
-    IBotStateService botStateService)
+    IBotStateService botStateService) : NotificationTasks(logger, notifyService, userRepository)
 {
-    private List<UserDto> UsersToNotify => userRepository.GetAll().Where(u => u.Notify).ToList();
-
-    public async Task SendNewVersionNotification()
-    {
-        var versionPath = Path.Combine(AppContext.BaseDirectory, "version.txt");
-        var version = File.Exists(versionPath) ? File.ReadAllText(versionPath) : string.Empty;
-
-        await NotifyUsers(string.Format(Terms.NewVersionMessage, version));
-    }
-
     private static readonly string iconOn = "Images/LightON.jpeg";
     private static readonly string iconOff = "Images/LightOFF.jpeg";
     private static readonly string iconOnOff = "Images/LightON-OFF.jpeg";
-
-    public async Task DoOnce(Func<Task> task)
-    {
-        try
-        {
-            await task();
-        }
-        catch (Exception e)
-        {
-            logger.Log(e);
-        }
-    }
 
     public async Task DoEveryMinute(Func<Task> task, int delay)
     {
@@ -141,25 +118,13 @@ public class ScheduledTasks(
 
         var messageTemplate = currentState.Status == Status.PowerOn ? Terms.ThereWasNoElectricity : Terms.ThereWasElectricity;
         var duration = previousState.DateTime.GetTimeDifference(currentState.DateTime);
-        var nextChange = GetNextStatusChange(currentState);
+
+        var messages = new Messages(historyService, scheduleService);
+        var nextChange = messages.GetNextStatusChange(currentState);
         var message = string.Format(messageTemplate, duration, nextChange);
 
         await NotifyUsers(message);
         botStateService.MarkAsNotified(currentState);
-    }
-
-    public string GetNextStatusChange(StatisticsDto currentState)
-    {
-        var now = new TimeOnly(DateTime.Now.Hour, DateTime.Now.Minute);
-        var schedule = scheduleService.GetCurrent();
-        var currentSlot = schedule?.Today.Slots.LastOrDefault(s => s.Start < now) ??
-                          schedule?.Tomorrow?.Slots.FirstOrDefault();
-
-        if (currentSlot is null) return Terms.Unknown;
-
-        return currentState.Status == currentSlot.Status
-            ? currentSlot.End.ToString("HH:mm")
-            : Terms.ExpectedAt.ToLower() + currentSlot.Start.ToString("HH:mm");
     }
 
     public async Task UpcomingBlackoutNotification()
@@ -211,7 +176,7 @@ public class ScheduledTasks(
         }
     }
 
-    public string GetScheduleMessage(ScheduleDto schedule, bool today)
+    public static string GetScheduleMessage(ScheduleDto schedule, bool today)
     {
         if (schedule is null || schedule.Slots is null || !schedule.Slots.Any())
         {
@@ -229,21 +194,6 @@ public class ScheduledTasks(
             message += $"{slot.Start:HH:mm} - {slot.End:HH:mm} {status} {arrow}\n";
         }
         return message;
-    }
-
-    private async Task NotifyUsers(string message)
-    {
-        foreach (var user in UsersToNotify)
-        {
-            try
-            {
-                await notifyService.Notify(user.Id, message);
-            }
-            catch (Exception e)
-            {
-                logger.Log($"Failed to notify user {user.Id}: {e.Message}");
-            }
-        }
     }
 
     private async Task UpdateIcon(string filePath)

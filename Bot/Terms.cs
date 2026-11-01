@@ -10,6 +10,7 @@ public class Terms
 
     public const string NoScheduleAvailable = "Розклад відсутній";
     public const string ExpectedAt = "Очікувалось о ";
+    public const string AnyTime = "будь-якої миті";
     public const string Unknown = "невідомо";
     public const string NoDataAvailable = "Немає даних";
     public const string EmergencyBlackout = $"{Icons.Warning} Аварійні відключення";
