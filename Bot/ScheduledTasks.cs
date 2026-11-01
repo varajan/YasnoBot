@@ -75,9 +75,10 @@ public class ScheduledTasks(
             return;
         }
 
-        var message = GetScheduleMessage(schedule, today);
+        var messages = new Messages(historyService, scheduleService);
+        var message = messages.GetScheduleMessage(today);
         await NotifyUsers(today ? Terms.NewScheduleMessage4Today : Terms.NewScheduleMessage4Tomorrow);
-        await NotifyUsers(message);
+        await NotifyUsers(message ?? Terms.NoScheduleAvailable);
         botStateService.MarkAsNotified(schedule);
     }
 
@@ -174,26 +175,6 @@ public class ScheduledTasks(
                 botStateService.MarkAsNotified(newSchedule.Tomorrow);
             }
         }
-    }
-
-    public static string GetScheduleMessage(ScheduleDto schedule, bool today)
-    {
-        if (schedule is null || schedule.Slots is null || !schedule.Slots.Any())
-        {
-            return Terms.NoScheduleAvailable;
-        }
-
-        var now = new TimeOnly(DateTime.Now.Hour, DateTime.Now.Minute);
-        var message = string.Empty;
-        if (schedule.IsEmergence) message += Terms.EmergencyBlackout;
-
-        foreach (var slot in schedule.Slots)
-        {
-            var arrow = today && now.IsBetween(slot.Start, slot.End) ? Icons.Arrow : string.Empty;
-            var status = slot.Status == Status.PowerOn ? Icons.BatteryFull : Icons.BatteryEmpty;
-            message += $"{slot.Start:HH:mm} - {slot.End:HH:mm} {status} {arrow}\n";
-        }
-        return message;
     }
 
     private async Task UpdateIcon(string filePath)

@@ -25,13 +25,30 @@ public class Messages(IHistoryService historyService, IScheduleService scheduleS
         return string.Format(messageTemplate, duration, nextChange);
     }
 
-    public string? GetScheduleMessage(bool isToday)
+    public string? GetScheduleMessage(bool today)
     {
         var fullSchedule = scheduleService.GetCurrent();
         if (fullSchedule is null) return null;
 
-        var schedule = isToday ? fullSchedule.Today : fullSchedule.Tomorrow;
-        return ScheduledTasks.GetScheduleMessage(schedule, isToday);
+        var schedule = today ? fullSchedule.Today : fullSchedule.Tomorrow;
+
+        if (schedule?.IsEmergence == true) return Terms.EmergencyBlackout;
+
+        if (schedule is null || schedule.Slots is null || schedule.Slots.Length == 0)
+        {
+            return Terms.NoScheduleAvailable;
+        }
+
+        var now = new TimeOnly(DateTime.Now.Hour, DateTime.Now.Minute);
+        var message = string.Empty;
+        foreach (var slot in schedule.Slots)
+        {
+            var arrow = today && now.IsBetween(slot.Start, slot.End) ? Icons.Arrow : string.Empty;
+            var status = slot.Status == Status.PowerOn ? Icons.BatteryFull : Icons.BatteryEmpty;
+            message += $"{slot.Start:HH:mm} - {slot.End:HH:mm} {status} {arrow}\n";
+        }
+
+        return message;
     }
 
     public string GetNextStatusChange(StatisticsDto currentState)
