@@ -6,6 +6,14 @@ namespace Bot;
 
 public class Messages(IHistoryService historyService, IScheduleService scheduleService)
 {
+    public string GetVersionMessage()
+    {
+        var versionPath = Path.Combine(AppContext.BaseDirectory, "version.txt");
+        var version = File.Exists(versionPath) ? File.ReadAllText(versionPath) : string.Empty;
+
+        return string.Format(Terms.NewVersionMessage, version);
+    }
+
     public string? GetCurrentStatusMessage()
     {
         var currentState = historyService.GetLastRecord();

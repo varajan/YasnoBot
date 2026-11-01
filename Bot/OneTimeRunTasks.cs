@@ -5,6 +5,8 @@ namespace Bot;
 public class OneTimeRunTasks(ILogger logger, INotifyService notifyService, IUserRepository userRepository, IHistoryService historyService, IScheduleService scheduleService)
     : NotificationTasks(logger, notifyService, userRepository)
 {
+    private Messages Messages => new(historyService, scheduleService);
+
     public async Task DoOnce(Func<Task> task)
     {
         try
@@ -17,19 +19,11 @@ public class OneTimeRunTasks(ILogger logger, INotifyService notifyService, IUser
         }
     }
 
-    public async Task SendNewVersionNotification()
-    {
-        var versionPath = Path.Combine(AppContext.BaseDirectory, "version.txt");
-        var version = File.Exists(versionPath) ? File.ReadAllText(versionPath) : string.Empty;
-
-        await NotifyUsers(string.Format(Terms.NewVersionMessage, version));
-    }
+    public async Task SendNewVersionNotification() => await NotifyUsers(Messages.GetVersionMessage());
 
     public async Task SendCurrentStatusNotification()
     {
-        var messages = new Messages(historyService, scheduleService);
-        var currentState = messages.GetCurrentStatusMessage();
-
+        var currentState = Messages.GetCurrentStatusMessage();
         if (currentState is not null) await NotifyUsers(currentState);
     }
 }
