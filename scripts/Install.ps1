@@ -1,6 +1,6 @@
 # Set-ExecutionPolicy RemoteSigned -Scope LocalMachine -Force
 
-$TaskName = "Update bot"
+$TaskName = "Update YasnoBot bot"
 $ScriptPath = "C:\YasnoBotUpdater\UpdateBot.ps1"
 $ActionArg = "-ExecutionPolicy Bypass -File `"$ScriptPath`""
 
