@@ -54,8 +54,8 @@ public class Messages(IHistoryService historyService, IScheduleService scheduleS
             if (slot.Status == Status.PowerOn) onTime += duration; else offTime += duration;
         }
 
-        var onTime = TimeSpan.FromMinutes(Math.Round(onTime.TotalMinutes / 30.0) * 30);
-        var offTime = TimeSpan.FromMinutes(Math.Round(offTime.TotalMinutes / 30.0) * 30);
+        onTime = TimeSpan.FromMinutes(Math.Round(onTime.TotalMinutes / 30.0) * 30);
+        offTime = TimeSpan.FromMinutes(Math.Round(offTime.TotalMinutes / 30.0) * 30);
 
         message += $"\n{Icons.BatteryFull} {onTime:hh\\:mm}";
         message += $"\n{Icons.BatteryEmpty} {offTime:hh\\:mm}";
