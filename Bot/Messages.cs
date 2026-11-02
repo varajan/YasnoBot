@@ -41,13 +41,22 @@ public class Messages(IHistoryService historyService, IScheduleService scheduleS
 
         var now = new TimeOnly(DateTime.Now.Hour, DateTime.Now.Minute);
         var message = string.Empty;
+        var onTime = TimeSpan.Zero;
+        var offTime = TimeSpan.Zero;
+        
         foreach (var slot in schedule.Slots)
         {
             var arrow = today && now.IsBetween(slot.Start, slot.End) ? Icons.Arrow : string.Empty;
             var status = slot.Status == Status.PowerOn ? Icons.BatteryFull : Icons.BatteryEmpty;
             message += $"{slot.Start:HH:mm} - {slot.End:HH:mm} {status} {arrow}\n";
+
+            var duration = slot.End - slot.Start;
+            if (slot.Status == Status.PowerOn) onTime += duration; else offTime += duration;
         }
 
+        message += $"\n\n{Icons.BatteryFull} {onTime:HH:mm}";
+        message += $"\n{Icons.BatteryEmpty} {offTime:HH:mm}";
+     
         return message;
     }
 
