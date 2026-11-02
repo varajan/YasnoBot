@@ -54,8 +54,8 @@ public class Messages(IHistoryService historyService, IScheduleService scheduleS
             if (slot.Status == Status.PowerOn) onTime += duration; else offTime += duration;
         }
 
-        message += $"\n\n{Icons.BatteryFull} {onTime:HH:mm}";
-        message += $"\n{Icons.BatteryEmpty} {offTime:HH:mm}";
+        message += $"\n\n{Icons.BatteryFull} {onTime:hh\\:mm}";
+        message += $"\n{Icons.BatteryEmpty} {offTime:hh\\:mm}";
      
         return message;
     }
