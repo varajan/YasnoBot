@@ -1,6 +1,6 @@
 ﻿using Base.Interfaces;
 
-namespace Bot;
+namespace Bot.Tasks;
 
 public class OneTimeRunTasks(ILogger logger, INotifyService notifyService, IUserRepository userRepository, IHistoryService historyService, IScheduleService scheduleService)
     : NotificationTasks(logger, notifyService, userRepository)

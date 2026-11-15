@@ -2,7 +2,7 @@
 using Base.Extensions;
 using Base.Interfaces;
 
-namespace Bot;
+namespace Bot.Terms.Terms;
 
 public class Messages(IHistoryService historyService, IScheduleService scheduleService)
 {
@@ -43,7 +43,7 @@ public class Messages(IHistoryService historyService, IScheduleService scheduleS
         var message = string.Empty;
         var onTime = TimeSpan.Zero;
         var offTime = TimeSpan.Zero;
-        
+
         foreach (var slot in schedule.Slots)
         {
             var arrow = today && now.IsBetween(slot.Start, slot.End) ? Icons.Arrow : string.Empty;
@@ -59,7 +59,7 @@ public class Messages(IHistoryService historyService, IScheduleService scheduleS
 
         message += $"\n{Icons.BatteryFull} {onTime:hh\\:mm}";
         message += $"\n{Icons.BatteryEmpty} {offTime:hh\\:mm}";
-     
+
         return message;
     }
 

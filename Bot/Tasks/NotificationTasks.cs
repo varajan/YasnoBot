@@ -1,7 +1,7 @@
 ﻿using Base.DTOs;
 using Base.Interfaces;
 
-namespace Bot;
+namespace Bot.Tasks;
 
 public abstract class NotificationTasks(ILogger logger, INotifyService notifyService, IUserRepository userRepository)
 {

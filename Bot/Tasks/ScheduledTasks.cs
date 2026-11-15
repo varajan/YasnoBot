@@ -4,7 +4,7 @@ using Base.Interfaces;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 
-namespace Bot;
+namespace Bot.Tasks;
 
 public class ScheduledTasks(
     ITelegramBotClient botClient,
