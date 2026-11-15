@@ -119,6 +119,7 @@ public class YasnoBot
 
             switch (message.Text)
             {
+                // Admin commands
                 case Terms.Settings:
                     if (!user.IsAdmin)
                     {
@@ -126,13 +127,12 @@ public class YasnoBot
                         return;
                     }
 
-                    var allSettings = Settings.Keys.Select(key => $"{key}: {Settings.Get(key)}");
-                    var settingsMessage = string.Join("\n", allSettings) + "\n\n/set/<KEY>: <VALUE>";
                     var adminButtons = new List<List<string>>
                     {
                         new() { Terms.GoBack, Terms.Update }
                     };
-                    await NotifyService.NotifyWithButtons(message.Chat.Id, settingsMessage, adminButtons);
+
+                    await NotifyService.NotifyWithButtons(message.Chat.Id, messages.SettingsMessage(Settings), adminButtons);
                     return;
 
                 case Terms.Logs:
@@ -144,6 +144,25 @@ public class YasnoBot
 
                     await NotifyService.Notify(message.Chat.Id, Logger.TopLogs);
                     return;
+
+                case Terms.Update:
+                    if (!user.IsAdmin)
+                    {
+                        await NotifyService.Notify(message.Chat.Id, Terms.AccessDenied);
+                        return;
+                    }
+
+                    var updateButtons = new List<List<string>>
+                    {
+                        new() { Terms.City, Terms.Street, Terms.House },
+                        new() { Terms.Dsos, Terms.IPs },
+                        new() { Terms.GoBack },
+                    };
+
+                    await NotifyService.NotifyWithButtons(message.Chat.Id, messages.SettingsMessage(Settings), updateButtons);
+                    return;
+
+                // Admin commands
 
                 case Terms.TurnNotificationsOn:
                 case Terms.TurnNotificationsOff:

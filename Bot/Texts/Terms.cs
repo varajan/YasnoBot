@@ -7,6 +7,13 @@ public class Terms
     public const string AccessDenied = $"{Icons.Warning} Доступ заборонено";
     public const string Update = $"{Icons.Gear} Оновити";
     public const string GoBack = $"{Icons.Back} Повернутися";
+    public const string NoSettings = $"{Icons.Warning} Немає доступних налаштувань";
+
+    public const string City = $"{Icons.City} Місто";
+    public const string Dsos = $"{Icons.Dsos} Оператор системи розподілу";
+    public const string Street = $"{Icons.Street} Вулиця";
+    public const string House = $"{Icons.House} Будинок";
+    public const string IPs = $"{Icons.Network} IP-адреси";
 
     public const string TurnNotificationsOff = $"{Icons.BellOff} Вимкнути сповіщення";
     public const string TurnNotificationsOn = $"{Icons.BellOn} Увімкнути сповіщення";
@@ -56,4 +63,9 @@ public class Icons
     public const string Chart = "📊";
     public const string Timer = "⏳";
     public const string Clock = "⏰";
+    public const string City = "🏙";
+    public const string Dsos = "🏭";
+    public const string Street = "🛣";
+    public const string House = "🏠";
+    public const string Network = "🌐";
 }

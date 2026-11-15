@@ -78,4 +78,25 @@ public class Messages(IHistoryService historyService, IScheduleService scheduleS
             ? currentSlot.End.ToString("HH:mm")
             : Terms.ExpectedAt.ToLower() + currentSlot.Start.ToString("HH:mm");
     }
+
+    public string SettingsMessage(ISettings settings)
+    {
+        if (settings is null || settings.Keys.Count == 0) return Terms.NoSettings;
+        var allSettings = new List<string>
+        {
+            GetSettingText(settings, "City", Terms.City),
+            GetSettingText(settings, "DSOS", Terms.Dsos),
+            GetSettingText(settings, "Street", Terms.Street),
+            GetSettingText(settings, "House", Terms.House),
+            GetSettingText(settings, "IPs", Terms.IPs)
+        };
+
+        return string.Join("\n", allSettings);
+    }
+
+    private static string GetSettingText(ISettings settings, string key, string name)
+    {
+        var value = settings.Get(key);
+        return $"{name}: {(string.IsNullOrEmpty(value) ? Terms.NoDataAvailable : value)}";
+    }
 }
