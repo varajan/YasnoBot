@@ -113,92 +113,96 @@ public class YasnoBot
                 UserRepository.Save(user);
             }
 
-            var replyMessage = Terms.NotificationsOn;
-            var turnNotificationBtn = user.Notify ? Terms.TurnNotificationsOff : Terms.TurnNotificationsOn;
-            var messages = new Messages(HistoryService, ScheduleService);
+            var adminCommands = new List<string> { Terms.Settings, Terms.Logs, Terms.Update };
 
-            switch (message.Text)
+            if (adminCommands.Contains(message.Text))
             {
-                // Admin commands
-                case Terms.Settings:
-                    if (!user.IsAdmin)
-                    {
-                        await NotifyService.Notify(message.Chat.Id, Terms.AccessDenied);
-                        return;
-                    }
-
-                    var adminButtons = new List<List<string>>
-                    {
-                        new() { Terms.GoBack, Terms.Update }
-                    };
-
-                    await NotifyService.NotifyWithButtons(message.Chat.Id, messages.SettingsMessage(Settings), adminButtons);
-                    return;
-
-                case Terms.Logs:
-                    if (!user.IsAdmin)
-                    {
-                        await NotifyService.Notify(message.Chat.Id, Terms.AccessDenied);
-                        return;
-                    }
-
-                    await NotifyService.Notify(message.Chat.Id, Logger.TopLogs);
-                    return;
-
-                case Terms.Update:
-                    if (!user.IsAdmin)
-                    {
-                        await NotifyService.Notify(message.Chat.Id, Terms.AccessDenied);
-                        return;
-                    }
-
-                    var updateButtons = new List<List<string>>
-                    {
-                        new() { Terms.City, Terms.Street, Terms.House },
-                        new() { Terms.Dsos, Terms.IPs },
-                        new() { Terms.GoBack },
-                    };
-
-                    await NotifyService.NotifyWithButtons(message.Chat.Id, messages.SettingsMessage(Settings), updateButtons);
-                    return;
-
-                // Admin commands
-
-                case Terms.TurnNotificationsOn:
-                case Terms.TurnNotificationsOff:
-                    user.Notify = message.Text == Terms.TurnNotificationsOn;
-                    UserRepository.Save(user);
-                    replyMessage = user.Notify ? Terms.NotificationsOn : Terms.NotificationsOff;
-                    turnNotificationBtn = user.Notify ? Terms.TurnNotificationsOff : Terms.TurnNotificationsOn;
-                    break;
-
-                case Terms.CurrentStatus:
-                    replyMessage = messages.GetCurrentStatusMessage() ?? Terms.NoDataAvailable;
-                    break;
-
-                case Terms.Today:
-                case Terms.Tomorrow:
-                    replyMessage = messages.GetScheduleMessage(message.Text == Terms.Today) ?? Terms.NoDataAvailable;
-                    break;
+                await HandleAdminCommand(user, message.Text);
+                return;
             }
-
-            var buttons = new List<List<string>>
+            else
             {
-                new() { turnNotificationBtn },
-                new() { Terms.CurrentStatus },
-                new() { Terms.Today, Terms.Tomorrow },
-            };
-            if (user.IsAdmin)
-            {
-                buttons.Add([Terms.Settings, Terms.Logs]);
+                await HandleUserCommand(user, message.Text);
+                return;
             }
-
-            await NotifyService.NotifyWithButtons(message.Chat.Id, replyMessage, buttons);
         }
         catch (Exception e)
         {
             Console.WriteLine(e);
             Logger.Log(e);
         }
+    }
+
+    private static async Task HandleAdminCommand(UserDto user, string message)
+    {
+        if (!user.IsAdmin)
+        {
+            await NotifyService.Notify(user.Id, Terms.AccessDenied);
+            return;
+        }
+
+        switch (message)
+        {
+            case Terms.Settings:
+                var settingsMessage = new Messages(HistoryService, ScheduleService).SettingsMessage(Settings);
+                var buttons = new List<List<string>> { new() { Terms.GoBack, Terms.Update }, };
+                await NotifyService.NotifyWithButtons(user.Id, settingsMessage, buttons);
+                return;
+
+            case Terms.Logs:
+                await NotifyService.Notify(user.Id, Logger.TopLogs);
+                return;
+
+            case Terms.Update:
+                var updateButtons = new List<List<string>>
+                {
+                    new() { Terms.City, Terms.Street, Terms.House },
+                    new() { Terms.Dsos, Terms.IPs },
+                    new() { Terms.GoBack },
+                };
+                var updateMessage = new Messages(HistoryService, ScheduleService).SettingsMessage(Settings);
+                await NotifyService.NotifyWithButtons(user.Id, updateMessage, updateButtons);
+                return;
+        }
+    }
+
+    private static async Task HandleUserCommand(UserDto user, string message)
+    {
+        var replyMessage = Terms.NotificationsOn;
+        var turnNotificationBtn = user.Notify ? Terms.TurnNotificationsOff : Terms.TurnNotificationsOn;
+        var messages = new Messages(HistoryService, ScheduleService);
+
+        switch (message)
+        {
+            case Terms.TurnNotificationsOn:
+            case Terms.TurnNotificationsOff:
+                user.Notify = message == Terms.TurnNotificationsOn;
+                UserRepository.Save(user);
+                replyMessage = user.Notify ? Terms.NotificationsOn : Terms.NotificationsOff;
+                turnNotificationBtn = user.Notify ? Terms.TurnNotificationsOff : Terms.TurnNotificationsOn;
+                break;
+
+            case Terms.CurrentStatus:
+                replyMessage = messages.GetCurrentStatusMessage() ?? Terms.NoDataAvailable;
+                break;
+
+            case Terms.Today:
+            case Terms.Tomorrow:
+                replyMessage = messages.GetScheduleMessage(message == Terms.Today) ?? Terms.NoDataAvailable;
+                break;
+        }
+
+        var buttons = new List<List<string>>
+            {
+                new() { turnNotificationBtn },
+                new() { Terms.CurrentStatus },
+                new() { Terms.Today, Terms.Tomorrow },
+            };
+        if (user.IsAdmin)
+        {
+            buttons.Add([Terms.Settings, Terms.Logs]);
+        }
+
+        await NotifyService.NotifyWithButtons(user.Id, replyMessage, buttons);
     }
 }
