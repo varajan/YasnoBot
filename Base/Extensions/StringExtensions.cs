@@ -1,4 +1,6 @@
 ﻿using System.Globalization;
+using System.Net;
+using System.Net.Sockets;
 using System.Text.RegularExpressions;
 
 namespace Base.Extensions;
@@ -129,4 +131,8 @@ public static class StringExtensions
 
         return result;
     }
+
+    public static bool IsValidIpAddress(this string ip) =>
+        IPAddress.TryParse(ip, out var address) &&
+           address.AddressFamily == AddressFamily.InterNetwork;
 }

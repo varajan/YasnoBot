@@ -1,5 +1,6 @@
 ﻿using Base;
 using Base.DTOs;
+using Base.Extensions;
 using Base.Interfaces;
 using Bot.Tasks;
 using Bot.Texts;
@@ -161,14 +162,16 @@ public class YasnoBot
                 return;
 
             case Terms.Update:
-                var updateButtons = new List<List<string>>
-                {
-                    new() { Terms.City, Terms.Street, Terms.House },
-                    new() { Terms.Dsos, Terms.IPs },
-                    new() { Terms.GoBack },
-                };
                 var updateMessage = messages.SettingsMessage(Settings);
-                await NotifyService.NotifyWithButtons(user.Id, updateMessage, updateButtons);
+                var updateButtons = new List<string> { Terms.City };
+
+                if (Settings.Get(Constants.CITY) != string.Empty) updateButtons.Add(Terms.Dsos);
+                if (Settings.Get(Constants.DSOS) != string.Empty) updateButtons.Add(Terms.Street);
+                if (Settings.Get(Constants.STREET) != string.Empty) updateButtons.Add(Terms.House);
+                updateButtons.Add(Terms.IPs);
+                updateButtons.Add(Terms.GoBack);
+
+                await NotifyService.NotifyWithButtons(user.Id, updateMessage, updateButtons.ToArray());
                 return;
 
             case Terms.City:
@@ -198,7 +201,7 @@ public class YasnoBot
 
                 var settingKey = GetSettingKey(message);
                 var maintenanceMessage = messages.GetSettingMessage(Settings, settingKey, message);
-                var maintenanceButtons = new List<List<string>> { new() { Terms.Update, Terms.GoBack }, };
+                var maintenanceButtons = new List<List<string>> { new() { Terms.Update, Terms.GoBack } };
                 await NotifyService.NotifyWithButtons(user.Id, maintenanceMessage, maintenanceButtons);
                 return;
 
@@ -276,14 +279,16 @@ public class YasnoBot
             return;
         }
 
-        var updateButtons = new List<List<string>>
-                {
-                    new() { Terms.City, Terms.Street, Terms.House },
-                    new() { Terms.Dsos, Terms.IPs },
-                    new() { Terms.GoBack },
-                };
         var updateMessage = messages.SettingsMessage(Settings);
-        await NotifyService.NotifyWithButtons(user.Id, updateMessage, updateButtons);
+        var updateButtons = new List<string> { Terms.City };
+
+        if (Settings.Get(Constants.CITY) != string.Empty) updateButtons.Add(Terms.Dsos);
+        if (Settings.Get(Constants.DSOS) != string.Empty) updateButtons.Add(Terms.Street);
+        if (Settings.Get(Constants.STREET) != string.Empty) updateButtons.Add(Terms.House);
+        updateButtons.Add(Terms.IPs);
+        updateButtons.Add(Terms.GoBack);
+
+        await NotifyService.NotifyWithButtons(user.Id, updateMessage, updateButtons.ToArray());
     }
 
     private static async Task<bool> ValidateUpdateSetting(string mode, string value)
@@ -323,7 +328,7 @@ public class YasnoBot
 
         if (mode == Terms.IPs)
         {
-            // validate IP is valid.
+            return value.Split(',').Select(x => x.Trim()).All(x => x.IsValidIpAddress());
         }
 
         return false;
