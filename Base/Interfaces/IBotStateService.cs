@@ -6,4 +6,6 @@ public interface IBotStateService
     void MarkAsNotified(object entity);
     string CurrentIcon { get; set; }
     DateTime UpdateIconTime { get; set; }
+    void SetMaintenanceMode(string value);
+    string GetMaintenanceMode();
 }

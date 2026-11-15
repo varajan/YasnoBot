@@ -13,14 +13,46 @@ public class YasnoService(IApi api, IDataBase database) : IScheduleService
 
     public void SetCurrent(TwoDayScheduleDto schedule) => database.Execute($"INSERT OR REPLACE INTO Data (Key, Value) VALUES ('Schedule', '{schedule.Serialize()}')");
 
+    public async Task<List<string>> GetCities()
+    {
+        var regions = await api.Get<RegionDto[]>($"{addressApiUrl}/regions");
+        var cities = regions?.Select(r => r.Value).ToList();
+
+        return cities ?? [];
+    }
+
+    public async Task<List<string>> GetDsoses()
+    {
+        var settings = ServicesProvider.Get<ISettings>();
+        var city = settings.Get(Constants.CITY);
+        var regions = await api.Get<RegionDto[]>($"{addressApiUrl}/regions");
+        var dsoses = regions?.FirstOrDefault(r => r.Value == city)?.Dsos.Select(d => d.Name).ToList();
+
+        return dsoses ?? [];
+    }
+
+    public async Task<List<string>> GetHuoses()
+    {
+        var settings = ServicesProvider.Get<ISettings>();
+        var city = settings.Get(Constants.CITY);
+        var dsos = settings.Get(Constants.DSOS);
+        var street = settings.Get(Constants.STREET);
+
+        var (cityId, dsosId) = await GetRegionData(city, dsos);
+        var streetId = await GetStreetId(street, cityId, dsosId);
+        var houses = await api.Get<BaseDto[]>($"{addressApiUrl}/houses?regionId={cityId}&streetId={streetId}&query=&dsoId={dsosId}");
+
+        return houses?.Select(h => h.Value).ToList() ?? [];
+    }
+
     public async Task<TwoDayScheduleDto> GetNewSchedule()
     {
         var settings = ServicesProvider.Get<ISettings>();
 
-        var city = settings.Get("City");
-        var dsos = settings.Get("DSOS");
-        var street = settings.Get("Street");
-        var house = settings.Get("House");
+        var city = settings.Get(Constants.CITY);
+        var dsos = settings.Get(Constants.DSOS);
+        var street = settings.Get(Constants.STREET);
+        var house = settings.Get(Constants.HOUSE);
 
         if (string.IsNullOrWhiteSpace(city) || string.IsNullOrWhiteSpace(dsos) || string.IsNullOrWhiteSpace(street) || string.IsNullOrWhiteSpace(house))
         {
@@ -65,7 +97,7 @@ public class YasnoService(IApi api, IDataBase database) : IScheduleService
         return new DTOs.Schedule.SlotDto { Start = start, End = end, Status = status };
     }
 
-    private async Task<(int cityId, int dsosId)> GetRegionData(string city, string dsos)
+    public async Task<(int cityId, int dsosId)> GetRegionData(string city, string dsos)
     {
         await RandomDelay();
 
@@ -77,24 +109,24 @@ public class YasnoService(IApi api, IDataBase database) : IScheduleService
         return (cityId, dsosId);
     }
 
-    private async Task<int> GetStreetId(string street, int cityId, int dsosId)
+    public async Task<int> GetStreetId(string street, int cityId, int dsosId)
     {
         await RandomDelay();
 
         var streets = await api.Get<BaseDto[]>($"{addressApiUrl}/streets?regionId={cityId}&query={street}&dsoId={dsosId}");
-        var streetId = streets!.First(d => d.Value.Contains(street, StringComparison.CurrentCultureIgnoreCase)).Id;
+        var streetId = streets!.FirstOrDefault(d => d.Value.Contains(street, StringComparison.CurrentCultureIgnoreCase))?.Id;
 
-        return streetId;
+        return streetId ?? -1;
     }
 
-    private async Task<int> GetHouseId(string house, int cityId, int dsosId, int streetId)
+    public async Task<int> GetHouseId(string house, int cityId, int dsosId, int streetId)
     {
         await RandomDelay();
 
         var houses = await api.Get<BaseDto[]>($"{addressApiUrl}/houses?regionId={cityId}&streetId={streetId}&query=&dsoId={dsosId}");
-        var houseId = houses!.First(d => d.Value.Contains(house, StringComparison.CurrentCultureIgnoreCase)).Id;
+        var houseId = houses!.FirstOrDefault(d => d.Value.Contains(house, StringComparison.CurrentCultureIgnoreCase))?.Id;
 
-        return houseId;
+        return houseId ?? -1;
     }
 
     private async Task<GroupDto> GetGroup(int cityId, int dsosId, int streetId, int houseId)

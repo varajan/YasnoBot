@@ -33,4 +33,10 @@ public class BotStateService(IDataBase dataBase) : IBotStateService
 
         set => dataBase.Execute($"INSERT OR REPLACE INTO Data (Key, Value) VALUES ('IconUpdateTime', '{value}')");
     }
+
+    public void SetMaintenanceMode(string value) =>
+        dataBase.Execute($"INSERT OR REPLACE INTO Data (Key, Value) VALUES ('MaintenanceMode', '{value}')");
+
+    public string GetMaintenanceMode() => dataBase.GetValue($"SELECT Value FROM Data WHERE Key = 'MaintenanceMode'");
+
 }

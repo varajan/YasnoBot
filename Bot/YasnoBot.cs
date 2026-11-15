@@ -18,7 +18,7 @@ public class YasnoBot
     private static INotifyService NotifyService => ServicesProvider.Get<INotifyService>();
     private static IScheduleService ScheduleService => ServicesProvider.Get<IScheduleService>();
     private static IHistoryService HistoryService => ServicesProvider.Get<IHistoryService>();
-    private static IBotStateService DataService => ServicesProvider.Get<IBotStateService>();
+    private static IBotStateService BotStateService => ServicesProvider.Get<IBotStateService>();
     private static ISettings Settings => ServicesProvider.Get<ISettings>();
     private static IStatusService StatusService => ServicesProvider.Get<IStatusService>();
     private static ScheduledTasks? scheduledTasks;
@@ -34,7 +34,7 @@ public class YasnoBot
         ServicesProvider.AddApplicationServices();
         ServicesProvider.Add<INotifyService>(notifyService);
 
-        scheduledTasks = new ScheduledTasks(botClient, Logger, notifyService, ScheduleService, UserRepository, StatusService, HistoryService, DataService);
+        scheduledTasks = new ScheduledTasks(botClient, Logger, notifyService, ScheduleService, UserRepository, StatusService, HistoryService, BotStateService);
         oneTimeRunTasks = new OneTimeRunTasks(Logger, notifyService, UserRepository, HistoryService, ScheduleService);
 
         botClient.StartReceiving(
@@ -113,11 +113,16 @@ public class YasnoBot
                 UserRepository.Save(user);
             }
 
-            var adminCommands = new List<string> { Terms.Settings, Terms.Logs, Terms.Update };
+            var adminCommands = new List<string> { Terms.Settings, Terms.Logs, Terms.Update, Terms.City, Terms.Street, Terms.House, Terms.Dsos, Terms.IPs };
 
             if (adminCommands.Contains(message.Text))
             {
                 await HandleAdminCommand(user, message.Text);
+                return;
+            }
+            else if (user.IsAdmin && !string.IsNullOrEmpty(BotStateService.GetMaintenanceMode()))
+            {
+                await HandleMaintenanceMessage(user, message.Text);
                 return;
             }
             else
@@ -141,10 +146,12 @@ public class YasnoBot
             return;
         }
 
+        var messages = new Messages(HistoryService, ScheduleService);
+
         switch (message)
         {
             case Terms.Settings:
-                var settingsMessage = new Messages(HistoryService, ScheduleService).SettingsMessage(Settings);
+                var settingsMessage = messages.SettingsMessage(Settings);
                 var buttons = new List<List<string>> { new() { Terms.GoBack, Terms.Update }, };
                 await NotifyService.NotifyWithButtons(user.Id, settingsMessage, buttons);
                 return;
@@ -160,8 +167,44 @@ public class YasnoBot
                     new() { Terms.Dsos, Terms.IPs },
                     new() { Terms.GoBack },
                 };
-                var updateMessage = new Messages(HistoryService, ScheduleService).SettingsMessage(Settings);
+                var updateMessage = messages.SettingsMessage(Settings);
                 await NotifyService.NotifyWithButtons(user.Id, updateMessage, updateButtons);
+                return;
+
+            case Terms.City:
+                BotStateService.SetMaintenanceMode(message);
+                var cities = await ScheduleService.GetCities();
+                var cityMessage = string.Format(Terms.NewSettingQuestion, BotStateService.GetMaintenanceMode());
+                await NotifyService.NotifyWithButtons(user.Id, cityMessage, cities.Append(Terms.GoBack).ToArray());
+                return;
+
+            case Terms.Dsos:
+                BotStateService.SetMaintenanceMode(message);
+                var dsoses = await ScheduleService.GetDsoses();
+                var dsosMessage = string.Format(Terms.NewSettingQuestion, BotStateService.GetMaintenanceMode());
+                await NotifyService.NotifyWithButtons(user.Id, dsosMessage, dsoses.Append(Terms.GoBack).ToArray());
+                return;
+
+            case Terms.House:
+                BotStateService.SetMaintenanceMode(message);
+                var houses = await ScheduleService.GetHuoses();
+                var houseMessage = string.Format(Terms.NewSettingQuestion, BotStateService.GetMaintenanceMode());
+                await NotifyService.NotifyWithButtons(user.Id, houseMessage, houses.Append(Terms.GoBack).ToArray());
+                return;
+
+            case Terms.Street:
+            case Terms.IPs:
+                BotStateService.SetMaintenanceMode(message);
+
+                var settingKey = GetSettingKey(message);
+                var maintenanceMessage = messages.GetSettingMessage(Settings, settingKey, message);
+                var maintenanceButtons = new List<List<string>> { new() { Terms.Update, Terms.GoBack }, };
+                await NotifyService.NotifyWithButtons(user.Id, maintenanceMessage, maintenanceButtons);
+                return;
+
+            case Terms.GoBack:
+                BotStateService.SetMaintenanceMode(string.Empty);
+                await HandleUserCommand(user, string.Empty);
                 return;
         }
     }
@@ -205,4 +248,114 @@ public class YasnoBot
 
         await NotifyService.NotifyWithButtons(user.Id, replyMessage, buttons);
     }
+
+    private static async Task HandleMaintenanceMessage(UserDto user, string message)
+    {
+        var messages = new Messages(HistoryService, ScheduleService);
+        var mode = BotStateService.GetMaintenanceMode();
+
+        if (message == Terms.GoBack)
+        {
+            BotStateService.SetMaintenanceMode(string.Empty);
+            await HandleUserCommand(user, string.Empty);
+            return;
+        }
+
+        var key = GetSettingKey(mode);
+        var current = Settings.Get(key);
+        var isValid = await ValidateUpdateSetting(mode, message);
+        if (isValid && current != message)
+        {
+            Settings.Set(key, message);
+            await ResetDependentSettings(key);
+            await NotifyService.Notify(user.Id, Terms.Done);
+        }
+        else
+        {
+            await NotifyService.Notify(user.Id, Terms.InvalidData);
+            return;
+        }
+
+        var updateButtons = new List<List<string>>
+                {
+                    new() { Terms.City, Terms.Street, Terms.House },
+                    new() { Terms.Dsos, Terms.IPs },
+                    new() { Terms.GoBack },
+                };
+        var updateMessage = messages.SettingsMessage(Settings);
+        await NotifyService.NotifyWithButtons(user.Id, updateMessage, updateButtons);
+    }
+
+    private static async Task<bool> ValidateUpdateSetting(string mode, string value)
+    {
+        if (mode == Terms.City)
+        {
+            var values = await ScheduleService.GetCities();
+            return values.Contains(value);
+        }
+
+        if (mode == Terms.Dsos)
+        {
+            var city = Settings.Get(Constants.CITY);
+            var values = await ScheduleService.GetDsoses();
+            return values.Contains(value);
+        }
+
+        if (mode == Terms.Street)
+        {
+            var city = Settings.Get(Constants.CITY);
+            var dsos = Settings.Get(Constants.DSOS);
+            var (cityId, dsosId) = await ScheduleService.GetRegionData(city, dsos);
+            var streetId = await ScheduleService.GetStreetId(value, cityId, dsosId);
+            return streetId > 0;
+        }
+
+        if (mode == Terms.House)
+        {
+            var city = Settings.Get(Constants.CITY);
+            var dsos = Settings.Get(Constants.DSOS);
+            var street = Settings.Get(Constants.STREET);
+            var (cityId, dsosId) = await ScheduleService.GetRegionData(city, dsos);
+            var streetId = await ScheduleService.GetStreetId(street, cityId, dsosId);
+            var houseId = await ScheduleService.GetHouseId(value, cityId, dsosId, streetId);
+            return streetId > 0;
+        }
+
+        if (mode == Terms.IPs)
+        {
+            // validate IP is valid.
+        }
+
+        return false;
+    }
+
+    private static async Task ResetDependentSettings(string key)
+    {
+        switch (key)
+        {
+            case Constants.CITY:
+                Settings.Set(Constants.DSOS, null);
+                Settings.Set(Constants.STREET, null);
+                Settings.Set(Constants.HOUSE, null);
+                break;
+
+            case Constants.DSOS:
+                Settings.Set(Constants.STREET, null);
+                Settings.Set(Constants.HOUSE, null);
+                break;
+
+            case Constants.STREET:
+                Settings.Set(Constants.HOUSE, null);
+                break;
+        }
+    }
+
+    private static string GetSettingKey(string term) => term switch
+    {
+        Terms.City => Constants.CITY,
+        Terms.Dsos => Constants.DSOS,
+        Terms.Street => Constants.STREET,
+        Terms.House => Constants.HOUSE,
+        Terms.IPs => Constants.IPS,
+    };
 }

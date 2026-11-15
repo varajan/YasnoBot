@@ -172,8 +172,8 @@ public class ScheduledTasks(
 
             if (currentSchedule?.Tomorrow?.Date == newSchedule.Today?.Date)
             {
-                botStateService.MarkAsNotified(newSchedule.Today);
-                botStateService.MarkAsNotified(newSchedule.Tomorrow);
+                botStateService.MarkAsNotified(newSchedule?.Today ?? new object());
+                botStateService.MarkAsNotified(newSchedule?.Tomorrow ?? new object());
             }
         }
     }

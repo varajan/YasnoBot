@@ -1,4 +1,5 @@
-﻿using Base.DTOs.Schedule;
+﻿using Base;
+using Base.DTOs.Schedule;
 using Base.Extensions;
 using Base.Interfaces;
 
@@ -84,19 +85,24 @@ public class Messages(IHistoryService historyService, IScheduleService scheduleS
         if (settings is null || settings.Keys.Count == 0) return Terms.NoSettings;
         var allSettings = new List<string>
         {
-            GetSettingText(settings, "City", Terms.City),
-            GetSettingText(settings, "DSOS", Terms.Dsos),
-            GetSettingText(settings, "Street", Terms.Street),
-            GetSettingText(settings, "House", Terms.House),
-            GetSettingText(settings, "IPs", Terms.IPs)
+            GetSettingMessage(settings, Constants.CITY, Terms.City),
+            GetSettingMessage(settings, Constants.DSOS, Terms.Dsos),
+            GetSettingMessage(settings, Constants.STREET, Terms.Street),
+            GetSettingMessage(settings, Constants.HOUSE, Terms.House),
+            GetSettingMessage(settings, Constants.IPS, Terms.IPs)
         };
 
         return string.Join("\n", allSettings);
     }
 
-    private static string GetSettingText(ISettings settings, string key, string name)
+    public string GetSettingMessage(ISettings settings, string key, string name)
     {
         var value = settings.Get(key);
         return $"{name}: {(string.IsNullOrEmpty(value) ? Terms.NoDataAvailable : value)}";
     }
+
+    //public string GetAvaliableOptionsMessage(string key)
+    //{
+    //    scheduleService
+    //}
 }

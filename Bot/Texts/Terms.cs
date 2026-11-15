@@ -2,12 +2,16 @@
 
 public class Terms
 {
+    public const string Done = $"{Icons.Ok} Готово";
     public const string Logs = $"{Icons.Logs} Логи";
     public const string Settings = $"{Icons.Gear} Налаштування";
     public const string AccessDenied = $"{Icons.Warning} Доступ заборонено";
     public const string Update = $"{Icons.Gear} Оновити";
     public const string GoBack = $"{Icons.Back} Повернутися";
     public const string NoSettings = $"{Icons.Warning} Немає доступних налаштувань";
+    public const string NewSettingQuestion = $"{{0}}. Яке нове значення?";
+    public const string InvalidData = "Некоректне значення";
+
 
     public const string City = $"{Icons.City} Місто";
     public const string Dsos = $"{Icons.Dsos} Оператор системи розподілу";
@@ -49,6 +53,7 @@ public class Terms
 
 public class Icons
 {
+    public const string Ok = "✅";
     public const string BatteryFull = "🔋";
     public const string BatteryEmpty = "🪫";
     public const string Calendar = "📅";
