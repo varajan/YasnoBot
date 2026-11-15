@@ -20,12 +20,13 @@ public class UserRepository(IDataBase dataBase) : IUserRepository
 
     public void Save(UserDto user)
     {
-        dataBase.Execute($"INSERT OR REPLACE INTO Users (ID, Notify) VALUES ({user.Id}, {(user.Notify ? 1 : 0)})");
+        dataBase.Execute($"INSERT OR REPLACE INTO Users (ID, Notify, IsAdmin) VALUES ({user.Id}, {(user.Notify ? 1 : 0)}, {(user.IsAdmin ? 1 : 0)})");
     }
 
     private static UserDto GetUser(Dictionary<string, string> user) => new UserDto
     {
         Id = long.Parse(user["ID"]),
-        Notify = user["Notify"] == "1"
+        Notify = user["Notify"] == "1",
+        IsAdmin = user["IsAdmin"] == "1"
     };
 }

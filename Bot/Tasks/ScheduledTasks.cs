@@ -1,6 +1,7 @@
 ﻿using Base.DTOs.Schedule;
 using Base.Extensions;
 using Base.Interfaces;
+using Bot.Texts;
 using Telegram.Bot;
 using Telegram.Bot.Types;
 

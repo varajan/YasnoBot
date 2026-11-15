@@ -20,12 +20,12 @@ public class SQLiteDataBase(ILogger logger) : IDataBase
                 _connection = new SqliteConnection(ConnectionString);
                 _connection.Open();
 
-                var newVersion = 1;
+                var newVersion = 2;
                 var currentVersion = GetValue("PRAGMA user_version;").ToInt();
                 if (currentVersion != newVersion)
                 {
                     var createTablesCommand = @$"
-                        CREATE TABLE IF NOT EXISTS Users (ID Number PRIMARY KEY, Notify INTEGER);
+                        CREATE TABLE IF NOT EXISTS Users (ID Number PRIMARY KEY, Notify INTEGER, IsAdmin INTEGER);
                         CREATE TABLE IF NOT EXISTS History (DateTime TEXT PRIMARY KEY, Status INTEGER);
                         CREATE TABLE IF NOT EXISTS Data (Key TEXT PRIMARY KEY, Value TEXT);
                         CREATE TABLE IF NOT EXISTS Settings (Key TEXT PRIMARY KEY, Value TEXT);
@@ -48,6 +48,7 @@ public class SQLiteDataBase(ILogger logger) : IDataBase
             void Migrate()
             {
                 // Implement migration logic here if needed
+                Execute("DROP TABLE Users");
             }
 
             return _connection;

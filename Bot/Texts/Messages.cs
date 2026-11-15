@@ -2,7 +2,7 @@
 using Base.Extensions;
 using Base.Interfaces;
 
-namespace Bot.Terms.Terms;
+namespace Bot.Texts;
 
 public class Messages(IHistoryService historyService, IScheduleService scheduleService)
 {

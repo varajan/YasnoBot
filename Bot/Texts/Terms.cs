@@ -1,7 +1,13 @@
-﻿namespace Bot.Terms;
+﻿namespace Bot.Texts;
 
 public class Terms
 {
+    public const string Logs = $"{Icons.Logs} Логи";
+    public const string Settings = $"{Icons.Gear} Налаштування";
+    public const string AccessDenied = $"{Icons.Warning} Доступ заборонено";
+    public const string Update = $"{Icons.Gear} Оновити";
+    public const string GoBack = $"{Icons.Back} Повернутися";
+
     public const string TurnNotificationsOff = $"{Icons.BellOff} Вимкнути сповіщення";
     public const string TurnNotificationsOn = $"{Icons.BellOn} Увімкнути сповіщення";
     public const string CurrentStatus = $"{Icons.Chart} Поточний статус";
@@ -39,8 +45,11 @@ public class Icons
     public const string BatteryFull = "🔋";
     public const string BatteryEmpty = "🪫";
     public const string Calendar = "📅";
+    public const string Gear = "⚙";
+    public const string Logs = "📝";
     public const string Arrow = "👈";
     public const string Warning = "⚠";
+    public const string Back = "⬅";
     public const string Alert = "‼";
     public const string BellOn = "🔔";
     public const string BellOff = "🔕";

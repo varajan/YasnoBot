@@ -1,8 +1,8 @@
 ﻿using Base;
 using Base.DTOs;
-using Base.Extensions;
 using Base.Interfaces;
 using Bot.Tasks;
+using Bot.Texts;
 using System.Text.RegularExpressions;
 using Telegram.Bot;
 using Telegram.Bot.Polling;
@@ -66,9 +66,10 @@ public class YasnoBot
         {
             var pattern = @"^\d{10}:[a-zA-Z0-9-_]{35}$";
             var botIdTxtFile = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "BotID.txt");
-            var envVariableToken = Environment.GetEnvironmentVariable("YASNO_BOT_TOKEN").NullIfEmpty();
+            //var envVariableToken = Environment.GetEnvironmentVariable("YASNO_BOT_TOKEN").NullIfEmpty();
             var fileToken = File.Exists(botIdTxtFile) ? File.ReadAllLines(botIdTxtFile).FirstOrDefault(x => !string.IsNullOrEmpty(x)) : null;
-            var token = envVariableToken ?? fileToken;
+            var token = fileToken;
+            //var token = envVariableToken ?? fileToken;
 
             if (string.IsNullOrEmpty(token) || !Regex.IsMatch(token, pattern))
             {
@@ -99,28 +100,18 @@ public class YasnoBot
 
         try
         {
+            var usersCount = UserRepository.GetAll().Count;
             var user = UserRepository.Get(message.Chat.Id);
             if (user is null)
             {
                 user = new UserDto
                 {
                     Id = message.Chat.Id,
-                    Notify = true
+                    Notify = true,
+                    IsAdmin = usersCount == 0 // First user to interact with the bot becomes admin
                 };
                 UserRepository.Save(user);
             }
-
-            // Admin commands
-            if (message.Text.StartsWith("/set/"))
-            {
-                var key = message.Text.SubString("/set/", ":").Trim();
-                var value = message.Text.SubString(":").Trim();
-
-                Settings.Set(key, value);
-                await NotifyService.Notify(message.Chat.Id, $"Setting updated: {key} = {value}");
-                return;
-            }
-            // Admin commands
 
             var replyMessage = Terms.NotificationsOn;
             var turnNotificationBtn = user.Notify ? Terms.TurnNotificationsOff : Terms.TurnNotificationsOn;
@@ -128,13 +119,29 @@ public class YasnoBot
 
             switch (message.Text)
             {
-                case "/settings":
+                case Terms.Settings:
+                    if (!user.IsAdmin)
+                    {
+                        await NotifyService.Notify(message.Chat.Id, Terms.AccessDenied);
+                        return;
+                    }
+
                     var allSettings = Settings.Keys.Select(key => $"{key}: {Settings.Get(key)}");
                     var settingsMessage = string.Join("\n", allSettings) + "\n\n/set/<KEY>: <VALUE>";
-                    await NotifyService.Notify(message.Chat.Id, settingsMessage);
+                    var adminButtons = new List<List<string>>
+                    {
+                        new() { Terms.GoBack, Terms.Update }
+                    };
+                    await NotifyService.NotifyWithButtons(message.Chat.Id, settingsMessage, adminButtons);
                     return;
 
-                case "/logs":
+                case Terms.Logs:
+                    if (!user.IsAdmin)
+                    {
+                        await NotifyService.Notify(message.Chat.Id, Terms.AccessDenied);
+                        return;
+                    }
+
                     await NotifyService.Notify(message.Chat.Id, Logger.TopLogs);
                     return;
 
@@ -162,6 +169,11 @@ public class YasnoBot
                 new() { Terms.CurrentStatus },
                 new() { Terms.Today, Terms.Tomorrow },
             };
+            if (user.IsAdmin)
+            {
+                buttons.Add([Terms.Settings, Terms.Logs]);
+            }
+
             await NotifyService.NotifyWithButtons(message.Chat.Id, replyMessage, buttons);
         }
         catch (Exception e)

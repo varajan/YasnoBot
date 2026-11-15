@@ -22,6 +22,11 @@ public class YasnoService(IApi api, IDataBase database) : IScheduleService
         var street = settings.Get("Street");
         var house = settings.Get("House");
 
+        if (string.IsNullOrWhiteSpace(city) || string.IsNullOrWhiteSpace(dsos) || string.IsNullOrWhiteSpace(street) || string.IsNullOrWhiteSpace(house))
+        {
+            throw new Exception("City, DSOS, Street, and House settings must be set.");
+        }
+
         var (cityId, dsosId) = await GetRegionData(city, dsos);
         var streetId = await GetStreetId(street, cityId, dsosId);
         var houseId = await GetHouseId(house, cityId, dsosId, streetId);
