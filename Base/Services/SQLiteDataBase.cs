@@ -48,7 +48,21 @@ public class SQLiteDataBase(ILogger logger) : IDataBase
             void Migrate()
             {
                 // Implement migration logic here if needed
-                Execute("DROP TABLE Users");
+
+                Execute(@"
+BEGIN TRANSACTION;
+CREATE TABLE Users_Temp (ID Number PRIMARY KEY, Notify INTEGER);
+
+INSERT INTO Users_Temp (ID, Notify)
+SELECT ID, Notify FROM Users;
+
+DROP TABLE Users;
+CREATE TABLE Users (ID Number PRIMARY KEY, Notify INTEGER, IsAdmin INTEGER);
+
+INSERT INTO Users (ID, Notify, IsAdmin)
+SELECT ID, Notify, CASE WHEN ID = (SELECT MIN(ID) FROM Users_Temp) THEN 1 ELSE 0 END FROM Users_Temp;
+DROP TABLE Users_Temp;
+COMMIT;");
             }
 
             return _connection;
