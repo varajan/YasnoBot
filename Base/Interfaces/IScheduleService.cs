@@ -10,7 +10,7 @@ public interface IScheduleService
 
     Task<List<string>> GetCities(int waitTimeout = 0);
     Task<List<string>> GetDsoses(int waitTimeout = 0);
-    Task<List<string>> GetHuoses(int waitTimeout = 0);
+    Task<List<string>> GetHouses(int waitTimeout = 0);
 
     Task<(int cityId, int dsosId)> GetRegionData(string city, string dsos, int waitTimeout = 0);
     Task<int> GetStreetId(string street, int cityId, int dsosId, int waitTimeout = 0);

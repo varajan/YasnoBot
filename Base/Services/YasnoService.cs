@@ -35,7 +35,7 @@ public class YasnoService(IApi api, IDataBase database) : IScheduleService
         return dsoses ?? [];
     }
 
-    public async Task<List<string>> GetHuoses(int waitTimeout = 0)
+    public async Task<List<string>> GetHouses(int waitTimeout = 0)
     {
         await RandomDelay(waitTimeout);
 

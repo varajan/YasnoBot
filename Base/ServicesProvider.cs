@@ -25,6 +25,12 @@ public static class ServicesProvider
         Instance = services.BuildServiceProvider();
     }
 
+    public static void RegisterTransient<T>() where T : class
+    {
+        services.AddTransient<T>();
+        Instance = services.BuildServiceProvider();
+    }
+
     public static void Add<TImplementation>(TImplementation implemenation) where TImplementation : class
     {
         services.AddSingleton(implemenation);

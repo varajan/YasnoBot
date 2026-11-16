@@ -1,6 +1,5 @@
 ﻿using Base;
 using Base.DTOs;
-using Base.Extensions;
 using Base.Interfaces;
 using Bot.Tasks;
 using Bot.Texts;
@@ -22,6 +21,7 @@ public class YasnoBot
     private static IBotStateService BotStateService => ServicesProvider.Get<IBotStateService>();
     private static ISettings Settings => ServicesProvider.Get<ISettings>();
     private static IStatusService StatusService => ServicesProvider.Get<IStatusService>();
+    private static Setup SetupBot => ServicesProvider.Get<Setup>();
     private static ScheduledTasks? scheduledTasks;
     private static OneTimeRunTasks? oneTimeRunTasks;
 
@@ -34,6 +34,7 @@ public class YasnoBot
 
         ServicesProvider.AddApplicationServices();
         ServicesProvider.Add<INotifyService>(notifyService);
+        ServicesProvider.RegisterTransient<Setup>();
 
         scheduledTasks = new ScheduledTasks(botClient, Logger, notifyService, ScheduleService, UserRepository, StatusService, HistoryService, BotStateService);
         oneTimeRunTasks = new OneTimeRunTasks(Logger, notifyService, UserRepository, HistoryService, ScheduleService);
@@ -114,6 +115,8 @@ public class YasnoBot
                 UserRepository.Save(user);
             }
 
+            await SetupBot.HandleSetupBot(user, message.Text.Trim());
+
             var adminCommands = new List<string> { Terms.Settings, Terms.Logs, Terms.Update, Terms.City, Terms.Street, Terms.House, Terms.Dsos, Terms.IPs };
 
             if (adminCommands.Contains(message.Text))
@@ -138,6 +141,118 @@ public class YasnoBot
             Logger.Log(e);
         }
     }
+
+    //private static async Task HandleSetupBot0(UserDto user, string message)
+    //{
+    //    bool isValid;
+    //    const string welcome = "Welcome";
+    //    const string city = "ASK" + Terms.City;
+    //    const string dsos = "ASK" + Terms.Dsos;
+    //    const string street = "ASK" + Terms.Street;
+    //    const string house = "ASK" + Terms.House;
+    //    const string ips = "ASK" + Terms.IPs;
+    //    var waitTimeout = 1;
+
+    //    if (Settings.Keys.Count == 0) BotStateService.SetMaintenanceMode(welcome);
+
+    //    var mode = BotStateService.GetMaintenanceMode();
+    //    if (!user.IsAdmin) return;
+    //    if (mode != welcome) return;
+
+    //    await NotifyService.Notify(user.Id, Terms.WellcomeAdminMessage);
+    //    await NotifyService.Notify(user.Id, Terms.City);
+
+    //    switch (mode)
+    //    {
+    //        case welcome:
+    //            var cities = await ScheduleService.GetCities(waitTimeout);
+    //            await NotifyService.Notify(user.Id, Terms.WellcomeAdminMessage);
+    //            await NotifyService.NotifyWithButtons(user.Id, Terms.City, cities.ToArray());
+    //            BotStateService.SetMaintenanceMode(city);
+    //            break;
+
+    //        case city:
+    //            isValid = await SetupBot.SaveIfValid(Terms.City, message);
+    //            if (isValid)
+    //            {
+    //                var dsoses = await ScheduleService.GetDsoses(waitTimeout);
+    //                await NotifyService.Notify(user.Id, Terms.Done);
+    //                await NotifyService.NotifyWithButtons(user.Id, Terms.Dsos, dsoses.ToArray());
+    //                BotStateService.SetMaintenanceMode(dsos);
+    //            }
+    //            else
+    //            {
+    //                await NotifyService.Notify(user.Id, Terms.InvalidData);
+    //                await NotifyService.Notify(user.Id, Terms.City);
+    //            }
+    //            break;
+
+    //        case dsos:
+    //            isValid = await SetupBot.SaveIfValid(Terms.Dsos, message);
+    //            if (isValid)
+    //            {
+    //                await NotifyService.Notify(user.Id, Terms.Done);
+    //                await NotifyService.NotifyWithButtons(user.Id, Terms.Street);
+    //                BotStateService.SetMaintenanceMode(street);
+    //            }
+    //            else
+    //            {
+    //                await NotifyService.Notify(user.Id, Terms.InvalidData);
+    //                await NotifyService.Notify(user.Id, Terms.Dsos);
+    //            }
+    //            break;
+
+    //        case street:
+    //            isValid = await SetupBot.SaveIfValid(Terms.Street, message);
+    //            if (isValid)
+    //            {
+    //                var houses = await ScheduleService.GetHouses(waitTimeout);
+    //                await NotifyService.Notify(user.Id, Terms.Done);
+    //                await NotifyService.NotifyWithButtons(user.Id, Terms.House, houses.ToArray());
+    //                BotStateService.SetMaintenanceMode(house);
+    //            }
+    //            else
+    //            {
+    //                await NotifyService.Notify(user.Id, Terms.InvalidData);
+    //                await NotifyService.Notify(user.Id, Terms.Street);
+    //            }
+    //            break;
+
+    //        case house:
+    //            isValid = await SetupBot.SaveIfValid(Terms.House, message);
+    //            if (isValid)
+    //            {
+    //                await NotifyService.Notify(user.Id, Terms.Done);
+    //                await NotifyService.NotifyWithButtons(user.Id, Terms.IPs);
+    //                BotStateService.SetMaintenanceMode(ips);
+    //            }
+    //            else
+    //            {
+    //                await NotifyService.Notify(user.Id, Terms.InvalidData);
+    //                await NotifyService.Notify(user.Id, Terms.House);
+    //            }
+    //            break;
+
+    //        case ips:
+    //            isValid = await SetupBot.SaveIfValid(Terms.IPs, message);
+    //            if (isValid)
+    //            {
+    //                await NotifyService.Notify(user.Id, Terms.Done);
+    //            }
+    //            else
+    //            {
+    //                await NotifyService.Notify(user.Id, Terms.InvalidData);
+    //                await NotifyService.Notify(user.Id, Terms.CanDoLater);
+
+    //                var ipSettingKey = GetSettingKey(Terms.IPs);
+    //                Settings.Set(ipSettingKey, "8.8.8.8");
+    //            }
+
+    //            BotStateService.SetMaintenanceMode(string.Empty);
+    //            await HandleUserCommand(user, string.Empty);
+    //            break;
+    //    }
+    //}
 
     private static async Task HandleAdminCommand(UserDto user, string message)
     {
@@ -190,7 +305,7 @@ public class YasnoBot
 
             case Terms.House:
                 BotStateService.SetMaintenanceMode(message);
-                var houses = await ScheduleService.GetHuoses();
+                var houses = await ScheduleService.GetHouses();
                 var houseMessage = string.Format(Terms.NewSettingQuestion, BotStateService.GetMaintenanceMode());
                 await NotifyService.NotifyWithButtons(user.Id, houseMessage, houses.Append(Terms.GoBack).ToArray());
                 return;
@@ -199,7 +314,7 @@ public class YasnoBot
             case Terms.IPs:
                 BotStateService.SetMaintenanceMode(message);
 
-                var settingKey = GetSettingKey(message);
+                var settingKey = SetupBot.GetSettingKey(message);
                 var maintenanceMessage = messages.GetSettingMessage(Settings, settingKey, message);
                 var maintenanceButtons = new List<List<string>> { new() { Terms.Update, Terms.GoBack } };
                 await NotifyService.NotifyWithButtons(user.Id, maintenanceMessage, maintenanceButtons);
@@ -264,13 +379,9 @@ public class YasnoBot
             return;
         }
 
-        var key = GetSettingKey(mode);
-        var current = Settings.Get(key);
-        var isValid = await ValidateUpdateSetting(mode, message);
-        if (isValid && current != message)
+        var isValid = await SetupBot.SaveIfValid(mode, message);
+        if (isValid)
         {
-            Settings.Set(key, message);
-            await ResetDependentSettings(key);
             await NotifyService.Notify(user.Id, Terms.Done);
         }
         else
@@ -291,78 +402,93 @@ public class YasnoBot
         await NotifyService.NotifyWithButtons(user.Id, updateMessage, updateButtons.ToArray());
     }
 
-    private static async Task<bool> ValidateUpdateSetting(string mode, string value)
-    {
-        var waitTimeout = 200;
+    //private static async Task<bool> ValidateUpdateSetting(string mode, string value)
+    //{
+    //    var waitTimeout = 200;
 
-        if (mode == Terms.City)
-        {
-            var values = await ScheduleService.GetCities(waitTimeout);
-            return values.Contains(value);
-        }
+    //    if (mode == Terms.City)
+    //    {
+    //        var values = await ScheduleService.GetCities(waitTimeout);
+    //        return values.Contains(value);
+    //    }
 
-        if (mode == Terms.Dsos)
-        {
-            var city = Settings.Get(Constants.CITY);
-            var values = await ScheduleService.GetDsoses(waitTimeout);
-            return values.Contains(value);
-        }
+    //    if (mode == Terms.Dsos)
+    //    {
+    //        var city = Settings.Get(Constants.CITY);
+    //        var values = await ScheduleService.GetDsoses(waitTimeout);
+    //        return values.Contains(value);
+    //    }
 
-        if (mode == Terms.Street)
-        {
-            var city = Settings.Get(Constants.CITY);
-            var dsos = Settings.Get(Constants.DSOS);
-            var (cityId, dsosId) = await ScheduleService.GetRegionData(city, dsos, waitTimeout);
-            var streetId = await ScheduleService.GetStreetId(value, cityId, dsosId, waitTimeout);
-            return streetId > 0;
-        }
+    //    if (mode == Terms.Street)
+    //    {
+    //        var city = Settings.Get(Constants.CITY);
+    //        var dsos = Settings.Get(Constants.DSOS);
+    //        var (cityId, dsosId) = await ScheduleService.GetRegionData(city, dsos, waitTimeout);
+    //        var streetId = await ScheduleService.GetStreetId(value, cityId, dsosId, waitTimeout);
+    //        return streetId > 0;
+    //    }
 
-        if (mode == Terms.House)
-        {
-            var city = Settings.Get(Constants.CITY);
-            var dsos = Settings.Get(Constants.DSOS);
-            var street = Settings.Get(Constants.STREET);
-            var (cityId, dsosId) = await ScheduleService.GetRegionData(city, dsos, waitTimeout);
-            var streetId = await ScheduleService.GetStreetId(street, cityId, dsosId, waitTimeout);
-            var houseId = await ScheduleService.GetHouseId(value, cityId, dsosId, streetId, waitTimeout);
-            return streetId > 0;
-        }
+    //    if (mode == Terms.House)
+    //    {
+    //        var city = Settings.Get(Constants.CITY);
+    //        var dsos = Settings.Get(Constants.DSOS);
+    //        var street = Settings.Get(Constants.STREET);
+    //        var (cityId, dsosId) = await ScheduleService.GetRegionData(city, dsos, waitTimeout);
+    //        var streetId = await ScheduleService.GetStreetId(street, cityId, dsosId, waitTimeout);
+    //        var houseId = await ScheduleService.GetHouseId(value, cityId, dsosId, streetId, waitTimeout);
+    //        return streetId > 0;
+    //    }
 
-        if (mode == Terms.IPs)
-        {
-            return value.Split(',').Select(x => x.Trim()).All(x => x.IsValidIpAddress());
-        }
+    //    if (mode == Terms.IPs)
+    //    {
+    //        return value.Split(',').Select(x => x.Trim()).All(x => x.IsValidIpAddress());
+    //    }
 
-        return false;
-    }
+    //    return false;
+    //}
 
-    private static async Task ResetDependentSettings(string key)
-    {
-        switch (key)
-        {
-            case Constants.CITY:
-                Settings.Set(Constants.DSOS, string.Empty);
-                Settings.Set(Constants.STREET, string.Empty);
-                Settings.Set(Constants.HOUSE, string.Empty);
-                break;
+    //private static async Task ResetDependentSettings(string key)
+    //{
+    //    switch (key)
+    //    {
+    //        case Constants.CITY:
+    //            Settings.Set(Constants.DSOS, string.Empty);
+    //            Settings.Set(Constants.STREET, string.Empty);
+    //            Settings.Set(Constants.HOUSE, string.Empty);
+    //            break;
 
-            case Constants.DSOS:
-                Settings.Set(Constants.STREET, string.Empty);
-                Settings.Set(Constants.HOUSE, string.Empty);
-                break;
+    //        case Constants.DSOS:
+    //            Settings.Set(Constants.STREET, string.Empty);
+    //            Settings.Set(Constants.HOUSE, string.Empty);
+    //            break;
 
-            case Constants.STREET:
-                Settings.Set(Constants.HOUSE, string.Empty);
-                break;
-        }
-    }
+    //        case Constants.STREET:
+    //            Settings.Set(Constants.HOUSE, string.Empty);
+    //            break;
+    //    }
+    //}
 
-    private static string GetSettingKey(string term) => term switch
-    {
-        Terms.City => Constants.CITY,
-        Terms.Dsos => Constants.DSOS,
-        Terms.Street => Constants.STREET,
-        Terms.House => Constants.HOUSE,
-        Terms.IPs => Constants.IPS,
-    };
+    //private static string GetSettingKey(string term) => term switch
+    //{
+    //    Terms.City => Constants.CITY,
+    //    Terms.Dsos => Constants.DSOS,
+    //    Terms.Street => Constants.STREET,
+    //    Terms.House => Constants.HOUSE,
+    //    Terms.IPs => Constants.IPS,
+    //};
+
+    //private static async Task<bool> SaveIfValid(string mode, string value)
+    //{
+    //    var key = GetSettingKey(mode);
+    //    var current = Settings.Get(key);
+    //    var isValid = await ValidateUpdateSetting(mode, value);
+    //    if (isValid && current != value)
+    //    {
+    //        Settings.Set(key, value);
+    //        await ResetDependentSettings(key);
+    //        return true;
+    //    }
+
+    //    return false;
+    //}
 }

@@ -11,6 +11,7 @@ public class Terms
     public const string NoSettings = $"{Icons.Warning} Немає доступних налаштувань";
     public const string NewSettingQuestion = $"{{0}}. Яке нове значення?";
     public const string InvalidData = "Некоректне значення";
+    public const string CanDoLater = "Можете зробити це пізніше";
 
 
     public const string City = $"{Icons.City} Місто";
@@ -49,6 +50,17 @@ public class Terms
     public const string NewScheduleMessage4Tomorrow = $"{Icons.Calendar} Новий розклад на завтра.";
     public const string EmergencyBlackoutMessage = $"{Icons.Alert} Починаються аварійні відключення!";
     public const string NextBlackoutMessage = $"{Icons.BatteryEmpty} Наступне відключення через 5 хвилин";
+
+    public const string WellcomeAdminMessage = @"Вітаю!
+
+Ти адміністратор цього бота. Давай налаштуємо його роботу.
+
+Введи назву міста, постачальника електроенергії та адресу. За цими даними бот отримуватиме графіки відключень і повідомлятиме про них.
+
+Також додай IP-адреси кількох пристроїв у твоїй домашній мережі, які працюють лише за наявності електроенергії.
+
+Не забудь закріпити за ними статичні IP-адреси в налаштуваннях роутера. Це дозволить боту визначати, коли електроенергію вимкнули або відновили.";
+
 }
 
 public class Icons
