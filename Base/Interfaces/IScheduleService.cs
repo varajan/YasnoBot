@@ -8,11 +8,11 @@ public interface IScheduleService
     TwoDayScheduleDto GetCurrent();
     void SetCurrent(TwoDayScheduleDto schedule);
 
-    Task<List<string>> GetCities();
-    Task<List<string>> GetDsoses();
-    Task<List<string>> GetHuoses();
+    Task<List<string>> GetCities(int waitTimeout = 0);
+    Task<List<string>> GetDsoses(int waitTimeout = 0);
+    Task<List<string>> GetHuoses(int waitTimeout = 0);
 
-    Task<(int cityId, int dsosId)> GetRegionData(string city, string dsos);
-    Task<int> GetStreetId(string street, int cityId, int dsosId);
-    Task<int> GetHouseId(string house, int cityId, int dsosId, int streetId);
+    Task<(int cityId, int dsosId)> GetRegionData(string city, string dsos, int waitTimeout = 0);
+    Task<int> GetStreetId(string street, int cityId, int dsosId, int waitTimeout = 0);
+    Task<int> GetHouseId(string house, int cityId, int dsosId, int streetId, int waitTimeout = 0);
 }

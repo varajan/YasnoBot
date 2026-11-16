@@ -293,16 +293,18 @@ public class YasnoBot
 
     private static async Task<bool> ValidateUpdateSetting(string mode, string value)
     {
+        var waitTimeout = 200;
+
         if (mode == Terms.City)
         {
-            var values = await ScheduleService.GetCities();
+            var values = await ScheduleService.GetCities(waitTimeout);
             return values.Contains(value);
         }
 
         if (mode == Terms.Dsos)
         {
             var city = Settings.Get(Constants.CITY);
-            var values = await ScheduleService.GetDsoses();
+            var values = await ScheduleService.GetDsoses(waitTimeout);
             return values.Contains(value);
         }
 
@@ -310,8 +312,8 @@ public class YasnoBot
         {
             var city = Settings.Get(Constants.CITY);
             var dsos = Settings.Get(Constants.DSOS);
-            var (cityId, dsosId) = await ScheduleService.GetRegionData(city, dsos);
-            var streetId = await ScheduleService.GetStreetId(value, cityId, dsosId);
+            var (cityId, dsosId) = await ScheduleService.GetRegionData(city, dsos, waitTimeout);
+            var streetId = await ScheduleService.GetStreetId(value, cityId, dsosId, waitTimeout);
             return streetId > 0;
         }
 
@@ -320,9 +322,9 @@ public class YasnoBot
             var city = Settings.Get(Constants.CITY);
             var dsos = Settings.Get(Constants.DSOS);
             var street = Settings.Get(Constants.STREET);
-            var (cityId, dsosId) = await ScheduleService.GetRegionData(city, dsos);
-            var streetId = await ScheduleService.GetStreetId(street, cityId, dsosId);
-            var houseId = await ScheduleService.GetHouseId(value, cityId, dsosId, streetId);
+            var (cityId, dsosId) = await ScheduleService.GetRegionData(city, dsos, waitTimeout);
+            var streetId = await ScheduleService.GetStreetId(street, cityId, dsosId, waitTimeout);
+            var houseId = await ScheduleService.GetHouseId(value, cityId, dsosId, streetId, waitTimeout);
             return streetId > 0;
         }
 
@@ -339,18 +341,18 @@ public class YasnoBot
         switch (key)
         {
             case Constants.CITY:
-                Settings.Set(Constants.DSOS, null);
-                Settings.Set(Constants.STREET, null);
-                Settings.Set(Constants.HOUSE, null);
+                Settings.Set(Constants.DSOS, string.Empty);
+                Settings.Set(Constants.STREET, string.Empty);
+                Settings.Set(Constants.HOUSE, string.Empty);
                 break;
 
             case Constants.DSOS:
-                Settings.Set(Constants.STREET, null);
-                Settings.Set(Constants.HOUSE, null);
+                Settings.Set(Constants.STREET, string.Empty);
+                Settings.Set(Constants.HOUSE, string.Empty);
                 break;
 
             case Constants.STREET:
-                Settings.Set(Constants.HOUSE, null);
+                Settings.Set(Constants.HOUSE, string.Empty);
                 break;
         }
     }

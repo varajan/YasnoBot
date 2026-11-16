@@ -13,16 +13,20 @@ public class YasnoService(IApi api, IDataBase database) : IScheduleService
 
     public void SetCurrent(TwoDayScheduleDto schedule) => database.Execute($"INSERT OR REPLACE INTO Data (Key, Value) VALUES ('Schedule', '{schedule.Serialize()}')");
 
-    public async Task<List<string>> GetCities()
+    public async Task<List<string>> GetCities(int waitTimeout = 0)
     {
+        await RandomDelay(waitTimeout);
+
         var regions = await api.Get<RegionDto[]>($"{addressApiUrl}/regions");
         var cities = regions?.Select(r => r.Value).ToList();
 
         return cities ?? [];
     }
 
-    public async Task<List<string>> GetDsoses()
+    public async Task<List<string>> GetDsoses(int waitTimeout = 0)
     {
+        await RandomDelay(waitTimeout);
+
         var settings = ServicesProvider.Get<ISettings>();
         var city = settings.Get(Constants.CITY);
         var regions = await api.Get<RegionDto[]>($"{addressApiUrl}/regions");
@@ -31,8 +35,10 @@ public class YasnoService(IApi api, IDataBase database) : IScheduleService
         return dsoses ?? [];
     }
 
-    public async Task<List<string>> GetHuoses()
+    public async Task<List<string>> GetHuoses(int waitTimeout = 0)
     {
+        await RandomDelay(waitTimeout);
+
         var settings = ServicesProvider.Get<ISettings>();
         var city = settings.Get(Constants.CITY);
         var dsos = settings.Get(Constants.DSOS);
@@ -97,9 +103,9 @@ public class YasnoService(IApi api, IDataBase database) : IScheduleService
         return new DTOs.Schedule.SlotDto { Start = start, End = end, Status = status };
     }
 
-    public async Task<(int cityId, int dsosId)> GetRegionData(string city, string dsos)
+    public async Task<(int cityId, int dsosId)> GetRegionData(string city, string dsos, int waitTimeout = 0)
     {
-        await RandomDelay();
+        await RandomDelay(waitTimeout);
 
         var regions = await api.Get<RegionDto[]>($"{addressApiUrl}/regions");
         var region = regions!.First(r => r.Value == city);
@@ -109,9 +115,9 @@ public class YasnoService(IApi api, IDataBase database) : IScheduleService
         return (cityId, dsosId);
     }
 
-    public async Task<int> GetStreetId(string street, int cityId, int dsosId)
+    public async Task<int> GetStreetId(string street, int cityId, int dsosId, int waitTimeout = 0)
     {
-        await RandomDelay();
+        await RandomDelay(waitTimeout);
 
         var streets = await api.Get<BaseDto[]>($"{addressApiUrl}/streets?regionId={cityId}&query={street}&dsoId={dsosId}");
         var streetId = streets!.FirstOrDefault(d => d.Value.Contains(street, StringComparison.CurrentCultureIgnoreCase))?.Id;
@@ -119,9 +125,9 @@ public class YasnoService(IApi api, IDataBase database) : IScheduleService
         return streetId ?? -1;
     }
 
-    public async Task<int> GetHouseId(string house, int cityId, int dsosId, int streetId)
+    public async Task<int> GetHouseId(string house, int cityId, int dsosId, int streetId, int waitTimeout = 0)
     {
-        await RandomDelay();
+        await RandomDelay(waitTimeout);
 
         var houses = await api.Get<BaseDto[]>($"{addressApiUrl}/houses?regionId={cityId}&streetId={streetId}&query=&dsoId={dsosId}");
         var houseId = houses!.FirstOrDefault(d => d.Value.Contains(house, StringComparison.CurrentCultureIgnoreCase))?.Id;
@@ -149,9 +155,9 @@ public class YasnoService(IApi api, IDataBase database) : IScheduleService
         return schedule;
     }
 
-    private static async Task RandomDelay()
+    private static async Task RandomDelay(int waitTimeout = 0)
     {
-        int delayMilliseconds = Random.Shared.Next(500, 2500);
+        int delayMilliseconds = waitTimeout == 0 ? Random.Shared.Next(500, 2500) : waitTimeout;
         await Task.Delay(delayMilliseconds);
     }
 }
